@@ -6,6 +6,7 @@ header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 session_start();
 require_once dirname(__DIR__) . '/koneksi.php';
 require_once dirname(__DIR__) . '/includes/fitur_helper.php';
+require_once dirname(__DIR__) . '/includes/wallet_helper.php';
 
 if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'driver') {
     http_response_code(403);
@@ -231,6 +232,47 @@ try {
             'driver_id' => $driver_id
         ]);
         echo json_encode(['status' => 'success', 'message' => 'Bukti QRIS ditolak. Pelanggan diminta mengunggah ulang.']);
+        exit;
+    }
+
+    if ($action === 'adjust_price') {
+        $hargaBaru = (int)($input['harga_penyesuaian'] ?? ($input['total_tarif'] ?? 0));
+        $catatanTambahan = trim((string)($input['catatan_driver'] ?? ''));
+        if ($hargaBaru < 5000) $hargaBaru = 15000;
+
+        $stmtCek = $pdo->prepare("SELECT metode_bayar, catatan FROM pesanan WHERE id = :id AND (driver_id IS NULL OR driver_id = :driver_id)");
+        $stmtCek->execute(['id' => $order_id, 'driver_id' => $driver_id]);
+        $row = $stmtCek->fetch(PDO::FETCH_ASSOC);
+
+        if (!$row) {
+            echo json_encode(['status' => 'error', 'message' => 'Pesanan sudah diambil atau tidak ditemukan.']);
+            exit;
+        }
+
+        $targetStatus = ($row['metode_bayar'] === 'cash') ? 'Diproses' : 'Menunggu Pembayaran';
+        $catatanUpdate = $row['catatan'] ?? '';
+        if ($catatanTambahan !== '') {
+            $catatanUpdate .= "\n[Catatan Driver]: " . $catatanTambahan;
+        }
+
+        $stmt = $pdo->prepare("
+            UPDATE pesanan
+            SET total_tarif = :total_tarif,
+                driver_id = :new_driver_id,
+                status = :status,
+                catatan = :catatan
+            WHERE id = :id AND (driver_id IS NULL OR driver_id = :curr_driver_id)
+        ");
+        $stmt->execute([
+            'total_tarif' => $hargaBaru,
+            'new_driver_id' => $driver_id,
+            'status' => $targetStatus,
+            'catatan' => $catatanUpdate,
+            'id' => $order_id,
+            'curr_driver_id' => $driver_id
+        ]);
+
+        echo json_encode(['status' => 'success', 'message' => 'Harga berhasil disesuaikan dan pesanan diterima!', 'new_price' => $hargaBaru, 'new_status' => $targetStatus]);
         exit;
     }
 
