@@ -131,77 +131,145 @@ $redirect = $_GET["redirect"] ?? $_POST["redirect"] ?? "";
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Polindra Suruh</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=<?= filemtime(__DIR__ . '/assets/css/style.css') ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Archivo+Black&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/home.css?v=<?= filemtime(__DIR__ . '/assets/css/home.css') ?>">
 </head>
-<body class="page-auth page-santo-auth page-login">
+<body class="ps-body ps-auth-body">
 
-    <div class="santo-auth-wrapper">
-        <!-- TOP: HERO BANNER (Maskot Motor + Efek Bercahaya) -->
-        <div class="santo-hero-banner">
-            <div class="santo-hero-glow-aura"></div>
-            <div class="santo-hero-overlay">
-                <div class="santo-hero-mascot-wrap">
-                    <img src="assets/img/mascot-motor.png?v=<?= filemtime(__DIR__ . '/assets/img/mascot-motor.png') ?>" alt="Polindra Suruh" class="santo-hero-mascot">
-                </div>
-                <h1 class="santo-hero-tagline">Mau suruh apa hari ini?</h1>
-            </div>
-        </div>
+    <div class="ps-auth">
 
-        <!-- BOTTOM: WHITE FORM CARD -->
-        <div class="santo-form-card">
-            <div class="santo-form-header">
-                <h2>Login</h2>
-                <p>Mau suruh apa hari ini?</p>
-            </div>
+        <!-- KIRI: PANEL MASKOT + SELAMAT DATANG -->
+        <aside class="ps-auth-side" id="psAuthSide">
+            <a href="index.php" class="ps-logo ps-auth-logo">
+                <span class="ps-logo-mark">PS</span>
+                <span>Polindra Suruh</span>
+            </a>
 
-            <?php if ($pesan !== ""): ?>
-                <div class="alert alert-<?= $pesanType ?>">
-                    <?= htmlspecialchars($pesan, ENT_QUOTES, "UTF-8") ?>
-                </div>
-            <?php endif; ?>
-
-            <form method="POST" class="santo-form">
-                <input type="hidden" name="redirect" value="<?= htmlspecialchars($redirect) ?>">
-
-                <div class="santo-input-group">
-                    <input type="text" 
-                           name="login" 
-                           class="santo-input" 
-                           placeholder="Nomor WhatsApp / Username" 
-                           value="<?= htmlspecialchars($login) ?>" 
-                           autocomplete="username" 
-                           required 
-                           autofocus>
-                </div>
-
-                <div class="santo-input-group">
-                    <input type="password" 
-                           name="password" 
-                           class="santo-input" 
-                           placeholder="Password" 
-                           autocomplete="current-password" 
-                           required>
-                </div>
-
-                <div class="santo-forgot-wrap">
-                    <a href="https://wa.me/6283194189185?text=Halo%20Admin%20Polindra%20Suruh,%20saya%20lupa%20password%20akun%20saya" target="_blank" class="santo-forgot-link">Lupa Password ?</a>
-                </div>
-
-                <button type="submit" class="santo-btn-submit">Login</button>
-            </form>
-
-            <div class="santo-auth-footer">
-                Belum mempunyai akun? <a href="register.php">Daftar</a>
+            <div class="ps-auth-welcome">
+                <span class="ps-pill"><i></i> SELAMAT DATANG</span>
+                <h1 class="ps-auth-title" aria-label="Halo, Selamat Datang!">
+                    <span class="ps-line"><span class="ps-word" style="--d:.05s">Halo,</span></span>
+                    <span class="ps-line"><span class="ps-word ps-word-hl" style="--d:.2s">Selamat</span></span>
+                    <span class="ps-line"><span class="ps-word" style="--d:.35s">Datang!</span></span>
+                </h1>
+                <p class="ps-auth-rotator">
+                    Mau <b id="psRotator">titip makanan</b>?
+                </p>
             </div>
 
-            <div class="santo-back-home">
-                <a href="index.php">← Kembali ke Beranda</a>
+            <div class="ps-auth-mascot" id="psAuthMascot">
+                <div class="ps-auth-blob"></div>
+                <div class="ps-auth-bubble">Halo! Yuk login</div>
+                <div class="ps-auth-sticker">Siap<br>Ngebut!</div>
+                <div class="ps-auth-tilt" id="psAuthTilt">
+                    <picture>
+                        <source srcset="assets/img/mascot-login.webp" type="image/webp">
+                        <img src="assets/img/mascot-login.png" alt="Maskot Polindra Suruh menyapa" class="ps-auth-mascot-img" width="941" height="1672" fetchpriority="high">
+                    </picture>
+                </div>
             </div>
-        </div>
+        </aside>
+
+        <!-- KANAN: FORM LOGIN -->
+        <main class="ps-auth-main">
+            <div class="ps-auth-card">
+                <div class="ps-auth-head">
+                    <h2>Login</h2>
+                    <p>Mau suruh apa hari ini?</p>
+                </div>
+
+                <?php if ($pesan !== ""): ?>
+                    <div class="ps-alert ps-alert-<?= $pesanType ?>" role="alert">
+                        <?= htmlspecialchars($pesan, ENT_QUOTES, "UTF-8") ?>
+                    </div>
+                <?php endif; ?>
+
+                <form method="POST" class="ps-auth-form">
+                    <input type="hidden" name="redirect" value="<?= htmlspecialchars($redirect) ?>">
+
+                    <label class="ps-field">
+                        <span>Nomor WhatsApp / Username</span>
+                        <input type="text"
+                               name="login"
+                               class="ps-input"
+                               placeholder="08xx atau username"
+                               value="<?= htmlspecialchars($login) ?>"
+                               autocomplete="username"
+                               required
+                               autofocus>
+                    </label>
+
+                    <label class="ps-field">
+                        <span>Password</span>
+                        <div class="ps-input-wrap">
+                            <input type="password"
+                                   name="password"
+                                   id="psPassword"
+                                   class="ps-input"
+                                   placeholder="Password"
+                                   autocomplete="current-password"
+                                   required>
+                            <button type="button" class="ps-eye" id="psEye" aria-label="Tampilkan password">Lihat</button>
+                        </div>
+                    </label>
+
+                    <div class="ps-forgot">
+                        <a href="https://wa.me/6283194189185?text=Halo%20Admin%20Polindra%20Suruh,%20saya%20lupa%20password%20akun%20saya" target="_blank" rel="noopener">Lupa Password?</a>
+                    </div>
+
+                    <button type="submit" class="ps-btn ps-btn-dark ps-auth-submit">Login &rarr;</button>
+                </form>
+
+                <div class="ps-auth-foot">
+                    Belum mempunyai akun? <a href="register.php">Daftar</a>
+                </div>
+
+                <div class="ps-auth-back">
+                    <a href="index.php">&larr; Kembali ke Beranda</a>
+                </div>
+            </div>
+        </main>
     </div>
+
+    <script>
+    (function () {
+        // Tampilkan / sembunyikan password
+        var pw = document.getElementById('psPassword'), eye = document.getElementById('psEye');
+        eye.addEventListener('click', function () {
+            var show = pw.type === 'password';
+            pw.type = show ? 'text' : 'password';
+            eye.textContent = show ? 'Sembunyi' : 'Lihat';
+            eye.setAttribute('aria-label', show ? 'Sembunyikan password' : 'Tampilkan password');
+        });
+
+        // Teks berganti di area maskot
+        var words = ['titip makanan', 'antar barang', 'belanja', 'fotokopi & print', 'antar jemput', 'suruh apa saja'];
+        var el = document.getElementById('psRotator'), i = 0;
+        setInterval(function () {
+            el.classList.add('out');
+            setTimeout(function () {
+                i = (i + 1) % words.length;
+                el.textContent = words[i];
+                el.classList.remove('out');
+            }, 260);
+        }, 2400);
+
+        // Maskot mengikuti arah kursor
+        var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var side = document.getElementById('psAuthSide'), tilt = document.getElementById('psAuthTilt');
+        if (!reduce && window.matchMedia('(hover: hover)').matches) {
+            side.addEventListener('mousemove', function (e) {
+                var r = side.getBoundingClientRect();
+                var x = (e.clientX - r.left) / r.width - .5;
+                var y = (e.clientY - r.top) / r.height - .5;
+                tilt.style.transform = 'perspective(900px) rotateY(' + (x * 10) + 'deg) rotateX(' + (-y * 6) + 'deg) translate(' + (x * 12) + 'px,' + (y * 6) + 'px)';
+            });
+            side.addEventListener('mouseleave', function () { tilt.style.transform = ''; });
+        }
+    })();
+    </script>
 
 </body>
 </html>

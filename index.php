@@ -170,8 +170,8 @@ if (empty($marqueeItems)) {
                         <h2 class="ps-h2">Layanan <span class="ps-pill-title">Tersedia</span><br>Buat Kamu</h2>
                         <p class="ps-lead">Pilih bantuan yang kamu butuhkan hari ini.</p>
                     </div>
-                    <a href="layanan.php" class="ps-btn ps-btn-yellow ps-btn-sm">Lihat Semua</a>
-                </div>
+<a href="#layanan" class="ps-btn ps-btn-yellow ps-btn-sm" style="margin-top: 12px;">Lihat Semua</a>
+</div>
 
                 <div class="ps-cards">
                     <?php if (!empty($daftarLayanan)): ?>
@@ -271,7 +271,7 @@ if (empty($marqueeItems)) {
                         <h2>Mau Suruh Apa Hari Ini?</h2>
                         <p>Tinggal pilih layanan atau driver, tulis pesanan dan lokasimu.</p>
                     </div>
-                    <a href="layanan.php" class="ps-btn ps-btn-dark">Suruh Sekarang &rarr;</a>
+                    <a href="index.php#layanan" class="ps-btn ps-btn-dark">Suruh Sekarang &rarr;</a>
                 </div>
             </div>
         </section>

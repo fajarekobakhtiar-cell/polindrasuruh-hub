@@ -171,7 +171,7 @@ if (stripos($rawLayanan, 'print') !== false || stripos($rawLayanan, 'fotokopi') 
                     <p><?= htmlspecialchars($modeSub) ?></p>
                 </div>
             </div>
-            <a href="layanan.php" class="btn-change-service">Ganti Layanan &rarr;</a>
+            <a href="index.php#layanan" class="btn-change-service">Ganti Layanan &rarr;</a>
         </div>
 
         <form method="POST" action="uploads/proses_order_sistem.php" id="orderForm">

@@ -287,16 +287,9 @@ $login = isset($_SESSION["user_id"]);
                         </p>
                     </div>
 
-                    <a href="<?= !$login
-                        ? 'login.php?redirect=pilih_driver'
-                        : ($role === 'user'
-                            ? 'pilih_driver.php'
-                            : ($role === 'admin'
-                                ? 'admin/index.php'
-                                : 'driver.php')) ?>"
-                       class="ps-btn ps-btn-dark">
-                        <?= !$login ? 'Masuk Sekarang' : 'Mulai Suruh Sekarang' ?> &rarr;
-                    </a>
+                    <a href="index.php#driver" class="ps-btn ps-btn-dark">
+    <?= !$login ? 'Masuk Sekarang' : 'Mulai Suruh Sekarang' ?> &rarr;
+</a>
                 </div>
 
             </div>
