@@ -120,7 +120,7 @@ html { scroll-behavior: smooth; }
 }
 .ps-mascot-img {
     position: relative; z-index: 1; display: block;
-    height: min(800px, 100vh); width: auto; max-width: 100%; object-fit: contain; object-position: bottom;
+    height: min(1000px, 100vh); width: auto; max-width: 100%; object-fit: contain; object-position: bottom;
     margin-bottom: -2px; 
         transition: transform .7s cubic-bezier(.2,.8,.2,1);
     transform-origin: bottom center;
@@ -1581,14 +1581,14 @@ html { scroll-behavior: smooth; }
 }
 
 .ps-auth-bubble {
-    top: -13%;
-    right: 70%;
+    top: -10%;
+    right: 65%;
     font-size: 13px;
     padding: 9px 14px;
 }
 
 .ps-auth-sticker {
-    top: 30%;
+    top: 40%;
     right: -10%;
     font-size: 15px;
     padding: 10px 14px;
@@ -1738,4 +1738,55 @@ html { scroll-behavior: smooth; }
     .ps-auth-mascot-img {
         max-height: 255px;
     }
+}
+
+/* ==========================================================
+   HOME MASCOT ONLY — Tidak mengubah maskot halaman login
+   ========================================================== */
+.ps-hero .ps-hero-inner {
+    grid-template-columns: 1fr 1.05fr;
+}
+
+.ps-hero .ps-hero-mascot {
+    min-height: 540px;
+    width: 100%;
+}
+
+.ps-hero .ps-mascot-blob {
+    width: 95%;
+}
+
+.ps-hero .ps-mascot-img {
+    height: min(750px, 100vh);
+    max-width: none;
+    width: auto;
+}
+
+@media (max-width: 900px) {
+    .ps-hero .ps-hero-inner {
+        grid-template-columns: 1fr;
+    }
+
+    .ps-hero .ps-hero-mascot {
+        max-width: 480px;
+        min-height: 0;
+    }
+
+    .ps-hero .ps-mascot-img {
+        height: 530px;
+    }
+}
+/* ==========================================================
+   SERVICE CARDS — Seragam kuning semua
+   ========================================================== */
+.ps-cards .ps-card {
+    background: var(--yellow);
+}
+
+.ps-cards .ps-card p {
+    color: #3b3b00;
+}
+
+.ps-cards .ps-card-link {
+    border-color: var(--dark);
 }
