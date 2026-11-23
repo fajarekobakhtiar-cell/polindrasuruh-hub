@@ -8818,3 +8818,746 @@ body.page-santo-auth::after {
         gap: 6px;
     }
 }
+
+/* ==========================================
+   PESANAN SAYA - POLINDRA SURUH
+   Mengikuti style home.css
+========================================== */
+
+.page-pesanan {
+    --yellow: #FDE100;
+    --dark: #171717;
+    --bg: #F7F7F3;
+    --white: #FFFFFF;
+    --muted: #5c5c57;
+    --line: #e4e4dc;
+
+    background: var(--bg);
+    color: var(--dark);
+    font-family: 'Archivo', system-ui, sans-serif;
+    min-height: 100vh;
+}
+
+.page-pesanan .page-container {
+    width: min(1180px, calc(100% - 40px));
+    margin: 0 auto;
+    padding: 55px 0 90px;
+}
+
+/* HEADER */
+.page-pesanan .header-section {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 25px;
+    margin-bottom: 35px;
+}
+
+.page-pesanan .badge-sub {
+    display: inline-flex;
+    background: var(--dark);
+    color: var(--yellow);
+    padding: 8px 15px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .08em;
+}
+
+.page-pesanan .header-title-area h1 {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: clamp(38px, 5vw, 58px);
+    text-transform: uppercase;
+    line-height: 1.05;
+    margin: 18px 0 12px;
+}
+
+.page-pesanan .header-title-area p {
+    color: var(--muted);
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.7;
+}
+
+.page-pesanan .header-title-area p strong {
+    color: var(--dark);
+}
+
+/* BUTTON UMUM */
+.page-pesanan .btn-order-new,
+.page-pesanan .btn-primary,
+.page-pesanan .btn-secondary,
+.page-pesanan .btn-chat-inapp,
+.page-pesanan .btn-whatsapp,
+.page-pesanan .btn-pick-driver-now,
+.page-pesanan .btn-edit-pesanan,
+.page-pesanan .btn-batal,
+.page-pesanan .btn-reorder,
+.page-pesanan .btn-konfirmasi-qris,
+.page-pesanan .btn-lihat-bukti-user,
+.page-pesanan .btn-download-bukti,
+.page-pesanan .btn-close-modal {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 7px;
+    padding: 11px 19px;
+    border: 2px solid var(--dark);
+    border-radius: 999px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 800;
+    text-decoration: none;
+    cursor: pointer;
+    transition: .2s ease;
+}
+
+.page-pesanan .btn-order-new,
+.page-pesanan .btn-primary,
+.page-pesanan .btn-pick-driver-now,
+.page-pesanan .btn-konfirmasi-qris {
+    background: var(--yellow);
+    color: var(--dark);
+}
+
+.page-pesanan .btn-secondary,
+.page-pesanan .btn-chat-inapp,
+.page-pesanan .btn-edit-pesanan,
+.page-pesanan .btn-reorder,
+.page-pesanan .btn-close-modal {
+    background: var(--white);
+    color: var(--dark);
+}
+
+.page-pesanan .btn-whatsapp {
+    background: #dcfce7;
+    color: #166534;
+    border-color: #166534;
+}
+
+.page-pesanan .btn-batal {
+    background: #fff;
+    color: #b42318;
+    border-color: #b42318;
+}
+
+.page-pesanan .btn-order-new:hover,
+.page-pesanan .btn-primary:hover,
+.page-pesanan .btn-secondary:hover,
+.page-pesanan .btn-chat-inapp:hover,
+.page-pesanan .btn-whatsapp:hover,
+.page-pesanan .btn-pick-driver-now:hover,
+.page-pesanan .btn-edit-pesanan:hover,
+.page-pesanan .btn-batal:hover,
+.page-pesanan .btn-reorder:hover,
+.page-pesanan .btn-konfirmasi-qris:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 4px 4px 0 var(--dark);
+}
+
+/* NOTIFIKASI */
+.page-pesanan .alert-box,
+.page-pesanan .payment-success-banner {
+    padding: 20px 24px;
+    border: 2px solid var(--dark);
+    border-radius: 18px;
+    margin-bottom: 25px;
+    font-weight: 700;
+}
+
+.page-pesanan .alert-success {
+    background: #e8f7e9;
+    color: #166534;
+}
+
+.page-pesanan .alert-info {
+    background: #fff8cc;
+    color: #725900;
+}
+
+.page-pesanan .payment-success-banner {
+    background: #e8f7e9;
+}
+
+.page-pesanan .payment-success-content {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.page-pesanan .payment-success-content h3 {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 21px;
+    margin-bottom: 6px;
+}
+
+.page-pesanan .payment-success-content p {
+    margin-bottom: 10px;
+    font-size: 14px;
+}
+
+/* STATISTIK */
+.page-pesanan .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin-bottom: 32px;
+}
+
+.page-pesanan .stat-card {
+    background: var(--white);
+    border: 2.5px solid var(--dark);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 5px 5px 0 var(--dark);
+    transition: .2s ease;
+}
+
+.page-pesanan .stat-card:hover {
+    transform: translate(-3px, -3px);
+    box-shadow: 8px 8px 0 var(--dark);
+}
+
+.page-pesanan .stat-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+}
+
+.page-pesanan .stat-val {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 38px;
+    line-height: 1.2;
+    margin-top: 8px;
+    color: var(--dark) !important;
+}
+
+.page-pesanan .stat-card:nth-child(2) .stat-val {
+    color: #a17b00 !important;
+}
+
+.page-pesanan .stat-card:nth-child(3) .stat-val {
+    color: #16803d !important;
+}
+
+/* TAB */
+.page-pesanan .order-tabs-wrap {
+    display: flex;
+    gap: 10px;
+    padding: 7px;
+    width: fit-content;
+    max-width: 100%;
+    background: #e9e9e2;
+    border: 2px solid var(--dark);
+    border-radius: 999px;
+    margin-bottom: 25px;
+}
+
+.page-pesanan .order-tab-btn {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    padding: 12px 20px;
+    background: transparent;
+    color: var(--dark);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: .2s ease;
+}
+
+.page-pesanan .order-tab-btn.active {
+    background: var(--dark);
+    color: var(--yellow);
+}
+
+.page-pesanan .tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 21px;
+    height: 21px;
+    padding: 0 6px;
+    margin-left: 5px;
+    border-radius: 999px;
+    font-size: 11px;
+}
+
+.page-pesanan .tab-badge-yellow {
+    background: var(--yellow);
+    color: var(--dark);
+}
+
+.page-pesanan .tab-badge-gray {
+    background: #deded6;
+    color: var(--dark);
+}
+
+.page-pesanan .order-tab-panel {
+    display: none;
+}
+
+.page-pesanan .order-tab-panel.active {
+    display: block;
+}
+
+/* DAFTAR PESANAN */
+.page-pesanan .orders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.page-pesanan .order-card {
+    position: relative;
+    background: var(--white);
+    border: 2.5px solid var(--dark);
+    border-radius: 22px;
+    padding: 25px;
+    box-shadow: 6px 6px 0 var(--dark);
+    transition: .2s ease;
+}
+
+.page-pesanan .order-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 9px 9px 0 var(--dark);
+}
+
+.page-pesanan .order-card.is-highlighted {
+    border-color: var(--dark);
+    background: #fffef0;
+}
+
+.page-pesanan .highlight-tag {
+    display: inline-flex;
+    background: var(--yellow);
+    color: var(--dark);
+    border: 2px solid var(--dark);
+    border-radius: 999px;
+    padding: 6px 13px;
+    font-size: 11px;
+    font-weight: 800;
+    margin-bottom: 15px;
+}
+
+.page-pesanan .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding-bottom: 17px;
+    border-bottom: 1px solid var(--line);
+}
+
+.page-pesanan .order-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.page-pesanan .order-id-badge {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 16px;
+}
+
+.page-pesanan .order-time {
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.page-pesanan .status-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 13px;
+    border: 1.5px solid var(--dark);
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.page-pesanan .status-menunggu {
+    background: #fff3bd;
+    color: #725900;
+}
+
+.page-pesanan .status-bayar {
+    background: #ffe8b5;
+    color: #854d0e;
+}
+
+.page-pesanan .status-proses {
+    background: #dceeff;
+    color: #15528a;
+}
+
+.page-pesanan .status-perjalanan {
+    background: #dcfce7;
+    color: #166534;
+}
+
+/* ISI CARD */
+.page-pesanan .card-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    margin-top: 22px;
+}
+
+.page-pesanan .info-label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 9px;
+}
+
+.page-pesanan .catatan-box {
+    padding: 15px;
+    background: var(--bg);
+    border: 1.5px solid var(--line);
+    border-radius: 13px;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.7;
+    overflow-wrap: anywhere;
+}
+
+.page-pesanan .driver-info-panel {
+    background: var(--bg);
+    border: 1.5px solid var(--line);
+    border-radius: 15px;
+    padding: 16px;
+}
+
+.page-pesanan .driver-profile-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-pesanan .driver-avatar-mini {
+    display: grid;
+    place-items: center;
+    width: 46px;
+    height: 46px;
+    flex-shrink: 0;
+    background: var(--yellow);
+    border: 2px solid var(--dark);
+    border-radius: 14px;
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 20px;
+}
+
+.page-pesanan .driver-name {
+    font-size: 14px;
+    font-weight: 800;
+}
+
+.page-pesanan .driver-sub {
+    color: #16803d;
+    font-size: 11px;
+    font-weight: 700;
+    margin-top: 3px;
+}
+
+.page-pesanan .driver-missing-box {
+    padding: 18px;
+    background: #fffbea;
+    border: 1.5px dashed #c5a800;
+    border-radius: 15px;
+}
+
+.page-pesanan .driver-missing-text {
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 12px;
+}
+
+/* PEMBAYARAN */
+.page-pesanan .qris-payment-box {
+    margin-top: 22px;
+    padding: 22px;
+    background: #fffbea !important;
+    border: 2px solid var(--dark) !important;
+    border-radius: 18px;
+}
+
+.page-pesanan .qris-box-header h4 {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 17px;
+    margin-bottom: 8px;
+}
+
+.page-pesanan .qris-payment-box img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+}
+
+.page-pesanan .status-banner-info {
+    margin-top: 20px;
+    padding: 17px;
+    background: #fff8cc !important;
+    border: 1.5px solid #c5a800 !important;
+    border-radius: 15px;
+    color: #5f4d00 !important;
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.page-pesanan .btn-lihat-bukti-user {
+    background: var(--white);
+    color: var(--dark);
+}
+
+.page-pesanan .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-top: 23px;
+    padding-top: 18px;
+    border-top: 1px solid var(--line);
+}
+
+.page-pesanan .card-footer > div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+}
+
+/* RIWAYAT */
+.page-pesanan #tab-riwayat .orders-list {
+    gap: 15px;
+}
+
+.page-pesanan #tab-riwayat .empty-state,
+.page-pesanan .empty-state {
+    padding: 45px 25px;
+    text-align: center;
+    background: var(--white);
+    border: 2px dashed #c9c9bd;
+    border-radius: 22px;
+}
+
+.page-pesanan .empty-title {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 23px;
+    margin-bottom: 10px;
+}
+
+.page-pesanan .empty-desc {
+    color: var(--muted);
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.7;
+    margin-bottom: 20px;
+}
+
+/* MODAL */
+.page-pesanan .bukti-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: rgba(23, 23, 23, .72);
+    backdrop-filter: blur(5px);
+}
+
+.page-pesanan .bukti-modal-backdrop.active {
+    display: flex;
+}
+
+.page-pesanan .bukti-modal-content {
+    width: min(520px, 100%);
+    max-height: 90vh;
+    overflow-y: auto;
+    background: var(--bg);
+    border: 2.5px solid var(--dark);
+    border-radius: 22px;
+    box-shadow: 8px 8px 0 var(--yellow);
+}
+
+.page-pesanan .bukti-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    padding: 18px 22px;
+    border-bottom: 2px solid var(--dark);
+    background: var(--yellow);
+}
+
+.page-pesanan .bukti-modal-header h3 {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 16px;
+}
+
+.page-pesanan .bukti-modal-close {
+    width: 34px;
+    height: 34px;
+    border: 2px solid var(--dark);
+    border-radius: 50%;
+    background: var(--white);
+    font-size: 22px;
+    cursor: pointer;
+}
+
+.page-pesanan .bukti-modal-body {
+    padding: 20px;
+    text-align: center;
+}
+
+.page-pesanan .bukti-modal-body img {
+    max-width: 100%;
+    max-height: 60vh;
+    object-fit: contain;
+    border-radius: 12px;
+}
+
+.page-pesanan .bukti-modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 15px 20px;
+    border-top: 1px solid var(--line);
+}
+
+.page-pesanan .btn-download-bukti {
+    background: var(--yellow);
+    color: var(--dark);
+}
+
+.page-pesanan .btn-close-modal {
+    background: var(--white);
+    color: var(--dark);
+}
+
+/* FORM DAN INPUT */
+.page-pesanan input:not([type="hidden"]),
+.page-pesanan select,
+.page-pesanan textarea {
+    font-family: 'Archivo', sans-serif;
+}
+
+.page-pesanan select,
+.page-pesanan textarea {
+    border: 1.5px solid var(--dark) !important;
+    border-radius: 12px !important;
+    background: var(--white) !important;
+    color: var(--dark) !important;
+    padding: 11px 13px !important;
+    font-size: 13px !important;
+}
+
+.page-pesanan select:focus,
+.page-pesanan textarea:focus {
+    outline: 3px solid rgba(253, 225, 0, .45);
+    border-color: var(--dark) !important;
+}
+
+/* RESPONSIVE */
+@media (max-width: 760px) {
+    .page-pesanan .page-container {
+        width: calc(100% - 28px);
+        padding-top: 35px;
+    }
+
+    .page-pesanan .header-section {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .page-pesanan .stats-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .page-pesanan .stat-card {
+        padding: 18px 20px;
+    }
+
+    .page-pesanan .stat-val {
+        font-size: 30px;
+    }
+
+    .page-pesanan .card-body {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .page-pesanan .order-card {
+        padding: 18px;
+    }
+
+    .page-pesanan .order-tabs-wrap {
+        width: 100%;
+        border-radius: 16px;
+    }
+
+    .page-pesanan .order-tab-btn {
+        flex: 1;
+        padding: 11px 8px;
+        font-size: 11px;
+    }
+
+    .page-pesanan .card-footer {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .page-pesanan .card-footer > div {
+        width: 100%;
+    }
+
+    .page-pesanan .card-footer a,
+    .page-pesanan .card-footer button {
+        flex: 1;
+    }
+
+    .page-pesanan .payment-success-content {
+        align-items: flex-start;
+    }
+}
+
+@media (max-width: 460px) {
+    .page-pesanan .header-title-area h1 {
+        font-size: 37px;
+    }
+
+    .page-pesanan .order-tab-btn {
+        font-size: 10px;
+        padding: 10px 5px;
+    }
+
+    .page-pesanan .card-top {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .page-pesanan .card-footer > div {
+        flex-direction: column;
+    }
+
+    .page-pesanan .card-footer a,
+    .page-pesanan .card-footer button {
+        width: 100%;
+    }
+
+    .page-pesanan .bukti-modal-footer {
+        flex-direction: column;
+    }
+
+    .page-pesanan .bukti-modal-footer a,
+    .page-pesanan .bukti-modal-footer button {
+        width: 100%;
+    }
+}

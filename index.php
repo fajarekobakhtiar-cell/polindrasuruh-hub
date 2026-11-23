@@ -53,27 +53,51 @@ if (empty($marqueeItems)) {
                 <span>Polindra Suruh</span>
             </a>
 
-            <nav class="ps-nav-links" id="psNavLinks">
-                <a href="layanan.php">Layanan</a>
-                <a href="#cara-kerja">Cara Kerja</a>
-                <a href="#driver">Driver</a>
-                <a href="tentang.php">Tentang</a>
-            </nav>
+<nav class="ps-nav-links" id="psNavLinks">
+    <a href="#layanan">Layanan</a>
+    <a href="#cara-kerja">Cara Kerja</a>
+    <a href="#driver">Driver</a>
+    <a href="tentang.php">Tentang</a>
+</nav>
 
-            <div class="ps-nav-actions">
-                <?php if ($login && $role === "admin"): ?>
-                    <a href="admin/index.php" class="ps-btn ps-btn-dark ps-btn-sm">Dashboard</a>
-                <?php elseif ($login && $role === "driver"): ?>
-                    <a href="driver.php" class="ps-btn ps-btn-dark ps-btn-sm">Dashboard</a>
-                <?php elseif ($login): ?>
-                    <a href="pesanan_saya.php" class="ps-btn ps-btn-dark ps-btn-sm">Pesanan Saya</a>
-                <?php else: ?>
-                    <a href="login.php" class="ps-btn ps-btn-yellow ps-btn-sm">Masuk / Daftar</a>
-                <?php endif; ?>
-                <button type="button" class="ps-burger" aria-label="Menu" onclick="document.getElementById('psNavLinks').classList.toggle('open')">
-                    <span></span><span></span><span></span>
-                </button>
-            </div>
+<div class="ps-nav-actions">
+
+    <?php if ($login && $role === "admin"): ?>
+        <a href="admin/index.php" class="ps-btn ps-btn-dark ps-btn-sm">
+            Dashboard
+        </a>
+
+    <?php elseif ($login && $role === "driver"): ?>
+        <a href="driver.php" class="ps-btn ps-btn-dark ps-btn-sm">
+            Dashboard
+        </a>
+
+    <?php elseif ($login): ?>
+        <a href="pesanan_saya.php" class="ps-btn ps-btn-dark ps-btn-sm">
+            Pesanan Saya
+        </a>
+
+    <?php else: ?>
+        <a href="login.php" class="ps-btn ps-btn-yellow ps-btn-sm">
+            Masuk / Daftar
+        </a>
+    <?php endif; ?>
+
+    <?php if ($login): ?>
+        <a href="logout.php" class="ps-btn ps-btn-ghost ps-btn-sm">
+            Keluar
+        </a>
+    <?php endif; ?>
+
+    <button type="button" class="ps-burger"
+        aria-label="Menu"
+        onclick="document.getElementById('psNavLinks').classList.toggle('open')">
+        <span></span>
+        <span></span>
+        <span></span>
+    </button>
+
+</div>
         </div>
     </header>
 
@@ -96,7 +120,7 @@ if (empty($marqueeItems)) {
 
                     <div class="ps-hero-cta">
                         <?php if ($login && ($role === "user" || !$role)): ?>
-                            <a href="layanan.php" class="ps-btn ps-btn-yellow">Mulai Suruh Sekarang &rarr;</a>
+                            <a href="#layanan" class="ps-btn ps-btn-yellow">Mulai Suruh Sekarang &rarr;</a>
                             <a href="pesanan_saya.php" class="ps-btn ps-btn-ghost">Pesanan Saya</a>
                         <?php elseif ($role === "admin"): ?>
                             <a href="admin/index.php" class="ps-btn ps-btn-yellow">Buka Dashboard Admin &rarr;</a>

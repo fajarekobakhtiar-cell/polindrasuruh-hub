@@ -1,3 +1,4 @@
+
 <?php
 session_start();
 
@@ -12,190 +13,313 @@ $login = isset($_SESSION["user_id"]);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tentang Kami - Polindra Suruh</title>
 
-    <link rel="stylesheet" href="assets/css/style.css?v=<?= filemtime(__DIR__ . '/assets/css/style.css') ?>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800;900&family=Archivo+Black&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="assets/css/home.css?v=<?= filemtime(__DIR__ . '/assets/css/home.css') ?>">
 </head>
-<body>
 
-    <?php require_once __DIR__ . '/includes/navbar.php'; ?>
+<body class="ps-body">
 
-    <!-- HEADER -->
-    <section class="header">
-        <small>POLINDRA SURUH-HUB</small>
+    <!-- NAVBAR -->
+    <header class="ps-nav">
+        <div class="ps-container ps-nav-inner">
 
-        <h1>
-            TENTANG <span>KAMI</span>
-        </h1>
+            <a href="index.php" class="ps-logo">
+                <span class="ps-logo-mark">PS</span>
+                <span>Polindra Suruh</span>
+            </a>
 
-        <p>
-            Mengenal lebih dekat platform jasa suruh civitas akademika Politeknik Negeri Indramayu.
-            Solusi praktis, cepat, dan andalan mahasiswa untuk memenuhi segala kebutuhan harian.
-        </p>
-    </section>
+            <nav class="ps-nav-links" id="psNavLinks">
+                <a href="index.php#layanan">Layanan</a>
+                <a href="index.php#cara-kerja">Cara Kerja</a>
+                <a href="index.php#driver">Driver</a>
+                <a href="tentang.php" class="ps-nav-active">Tentang</a>
+            </nav>
 
-    <!-- MAIN ABOUT HERO CARD -->
-    <section class="about-main-card">
-        <div>
-            <div class="about-badge">
-                <span class="about-badge-dot"></span>
-                <span>PLATFORM SURUH MAHASISWA</span>
+            <div class="ps-nav-actions">
+
+                <?php if ($login && $role === "admin"): ?>
+                    <a href="admin/index.php" class="ps-btn ps-btn-dark ps-btn-sm">Dashboard</a>
+
+                <?php elseif ($login && $role === "driver"): ?>
+                    <a href="driver.php" class="ps-btn ps-btn-dark ps-btn-sm">Dashboard</a>
+
+                <?php elseif ($login): ?>
+                    <a href="pesanan_saya.php" class="ps-btn ps-btn-dark ps-btn-sm">Pesanan Saya</a>
+
+                <?php else: ?>
+                    <a href="login.php" class="ps-btn ps-btn-yellow ps-btn-sm">Masuk / Daftar</a>
+                <?php endif; ?>
+
+                <?php if ($login): ?>
+                    <a href="logout.php" class="ps-btn ps-btn-ghost ps-btn-sm">Keluar</a>
+                <?php endif; ?>
+
+                <button type="button" class="ps-burger"
+                    aria-label="Menu"
+                    onclick="document.getElementById('psNavLinks').classList.toggle('open')">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+
             </div>
+        </div>
+    </header>
 
-            <h2 class="about-title">
-                Solusi Praktis & Tanggap untuk <span>Segala Kebutuhanmu</span>
-            </h2>
+    <main>
 
-            <p class="about-desc">
-                <strong>Polindra Suruh</strong> merupakan platform jasa suruh berbasis website yang dirancang
-                khusus untuk mempermudah aktivitas mahasiswa, dosen, serta civitas akademika Politeknik Negeri Indramayu.
-                Mulai dari membelikan makanan, kebutuhan fotokopi & print tugas, hingga antar jemput barang penting saat kamu sibuk praktikum atau kuliah padat.
-            </p>
+        <!-- ABOUT HERO -->
+        <section class="about-hero">
+            <div class="ps-container about-hero-inner">
 
-            <div class="about-features">
-                <div class="about-feature-item">
-                    
+                <div class="about-hero-content">
+                    <span class="ps-pill">
+                        <i></i> POLINDRA SURUH - HUB
+                    </span>
+
+                    <h1 class="ps-hero-title">
+                        TENTANG<br>
+                        <span class="ps-hl">KAMI.</span>
+                    </h1>
+
+                    <p class="about-hero-desc">
+                        Mengenal lebih dekat platform jasa suruh civitas akademika
+                        Politeknik Negeri Indramayu. Solusi praktis, cepat, dan
+                        andalan mahasiswa untuk memenuhi segala kebutuhan harian.
+                    </p>
+
+                    <a href="index.php#layanan" class="ps-btn ps-btn-dark">
+                        Jelajahi Layanan &rarr;
+                    </a>
+                </div>
+
+                <div class="about-hero-visual">
+                    <div class="about-visual-circle"></div>
+
+                    <div class="about-logo-card">
+                        <img src="assets/img/logo-circle.jpg" alt="Logo Polindra Suruh">
+
+                        <h3>POLINDRA<br>SURUH-HUB</h3>
+                        <p>Jasa Suruh Apa Saja</p>
+
+                        <div class="about-visual-status">
+                            <span></span> SIAP MEMBANTU
+                        </div>
+                    </div>
+
+                    <div class="about-floating-label">
+                        DARI MAHASISWA,<br>UNTUK MAHASISWA.
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- DESKRIPSI -->
+        <section class="ps-section about-intro">
+            <div class="ps-container">
+
+                <div class="ps-head">
                     <div>
-                        <strong>Cepat & Sigap</strong>
+                        <h2 class="ps-h2">
+                            KENAL LEBIH DEKAT<br>
+                            <span class="ps-pill-title">POLINDRA SURUH</span>
+                        </h2>
+                        <p class="ps-lead">
+                            Satu platform untuk membantu aktivitas sehari-hari.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="about-intro-card">
+                    <div class="about-intro-number">01</div>
+
+                    <div>
+                        <h3>Solusi Praktis & Tanggap untuk Segala Kebutuhanmu.</h3>
+
+                        <p>
+                            <strong>Polindra Suruh</strong> merupakan platform jasa
+                            suruh berbasis website yang dirancang khusus untuk
+                            mempermudah aktivitas mahasiswa, dosen, serta civitas
+                            akademika Politeknik Negeri Indramayu.
+
+                            Mulai dari membelikan makanan, kebutuhan fotokopi dan
+                            print tugas, hingga antar jemput barang penting saat
+                            kamu sibuk praktikum atau kuliah padat.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- KEUNGGULAN -->
+        <section class="about-features-section">
+            <div class="ps-container">
+
+                <div class="ps-head">
+                    <div>
+                        <h2 class="ps-h2">
+                            KENAPA<br>
+                            <span class="ps-yellow">POLINDRA SURUH?</span>
+                        </h2>
+                        <p class="about-section-desc">
+                            Dirancang untuk membuat setiap urusan menjadi lebih mudah.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="about-features-grid">
+
+                    <article class="about-feature-card">
+                        <span>01</span>
+                        <h3>Cepat & Sigap</h3>
                         <p>Pesanan langsung direspons oleh driver aktif kampus.</p>
-                    </div>
-                </div>
+                    </article>
 
-                <div class="about-feature-item">
-                    
-                    <div>
-                        <strong>Mitra Terpercaya</strong>
-                        <p>Driver resmi dari mahasiswa Polindra yang amanah.</p>
-                    </div>
-                </div>
+                    <article class="about-feature-card">
+                        <span>02</span>
+                        <h3>Mitra Terpercaya</h3>
+                        <p>Driver dari mahasiswa Polindra yang siap membantu.</p>
+                    </article>
 
-                <div class="about-feature-item">
-                    
-                    <div>
-                        <strong>QRIS Digital</strong>
-                        <p>Scan pembayaran praktis via e-wallet & m-banking.</p>
-                    </div>
-                </div>
+                    <article class="about-feature-card">
+                        <span>03</span>
+                        <h3>QRIS Digital</h3>
+                        <p>Scan pembayaran praktis melalui e-wallet dan m-banking.</p>
+                    </article>
 
-                <div class="about-feature-item">
-                    
-                    <div>
-                        <strong>Chat WhatsApp</strong>
+                    <article class="about-feature-card">
+                        <span>04</span>
+                        <h3>Chat WhatsApp</h3>
                         <p>Koordinasi instruksi secara langsung dengan driver.</p>
-                    </div>
+                    </article>
+
                 </div>
             </div>
-        </div>
+        </section>
 
-        <div>
-            <div class="about-visual-box">
-                <img src="assets/img/logo-circle.jpg" alt="Logo Polindra Suruh" style="width: 76px; height: 76px; border-radius: 50%; object-fit: cover; border: 3px solid #ffd21f; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35); margin-bottom: 14px;">
-                <h3>Polindra Suruh-Hub</h3>
-                <p class="sub">Jasa Suruh Apa Saja Kampus Polindra</p>
+        <!-- VISI MISI -->
+        <section class="ps-section about-values">
+            <div class="ps-container">
 
-                <div class="about-visual-status-pill">
-                    <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 8px #4ade80;"></span>
-                    <span>Driver Aktif & Siap Melayani</span>
+                <div class="ps-head">
+                    <div>
+                        <h2 class="ps-h2">
+                            LEBIH DARI<br>
+                            <span class="ps-pill-title">SEKADAR JASA.</span>
+                        </h2>
+                        <p class="ps-lead">
+                            Dibangun dari semangat kebersamaan mahasiswa.
+                        </p>
+                    </div>
                 </div>
 
-                <div class="about-visual-stats">
-                    <div class="about-visual-stat-item">
-                        <strong>100%</strong>
-                        <span>Mahasiswa</span>
-                    </div>
-                    <div class="about-visual-stat-item">
-                        <strong>QRIS</strong>
-                        <span>Scan Praktis</span>
-                    </div>
-                    <div class="about-visual-stat-item">
-                        <strong>Gercep</strong>
-                        <span>Siap Membantu</span>
-                    </div>
+                <div class="ps-cards">
+
+                    <article class="ps-card">
+                        <span class="ps-card-num">01</span>
+                        <h3>Visi & Misi</h3>
+                        <p>
+                            Menjadi platform andalan civitas kampus dalam
+                            mempermudah mobilitas dan efisiensi harian,
+                            sekaligus membuka peluang kerja sampingan yang
+                            fleksibel, aman, dan bermanfaat bagi mahasiswa
+                            Polindra sebagai mitra driver.
+                        </p>
+                    </article>
+
+                    <article class="ps-card">
+                        <span class="ps-card-num">02</span>
+                        <h3>Solidaritas Kampus</h3>
+                        <p>
+                            Dibangun atas dasar semangat saling membantu
+                            antar sesama mahasiswa. Kami mengutamakan
+                            integritas, ketepatan waktu pengantaran, dan
+                            transparansi tarif yang bersahabat di kantong mahasiswa.
+                        </p>
+                    </article>
+
+                    <article class="ps-card about-contact-card">
+                        <span class="ps-card-num">03</span>
+                        <h3>Kontak & Informasi</h3>
+
+                        <div class="about-contact-list">
+                            <div>
+                                <strong>Kampus Polindra</strong>
+                                <p>Jl. Raya Lohbener Lama No. 08, Indramayu</p>
+                            </div>
+
+                            <div>
+                                <strong>WhatsApp CS</strong>
+                                <p>0895-0729-8091</p>
+                            </div>
+
+                            <div>
+                                <strong>Instagram</strong>
+                                <p>@polindrasuruh</p>
+                            </div>
+
+                            <div>
+                                <strong>Jam Layanan</strong>
+                                <p>Fleksibel mengikuti aktivitas kampus</p>
+                            </div>
+                        </div>
+                    </article>
+
                 </div>
             </div>
-        </div>
-    </section>
+        </section>
 
-    <!-- 3 PILLAR CARDS -->
-    <section class="about-grid-three">
-        <div class="about-card-pillar">
-            <div class="pillar-icon-box">01</div>
-            <h3>Visi & Misi</h3>
-            <p>
-                Menjadi platform andalan civitas kampus dalam mempermudah mobilitas dan efisiensi harian,
-                sekaligus membuka peluang kerja sampingan yang fleksibel, aman, dan bermanfaat
-                bagi mahasiswa Polindra sebagai mitra driver.
-            </p>
-        </div>
+        <!-- CTA -->
+        <section class="ps-cta">
+            <div class="ps-container">
 
-        <div class="about-card-pillar">
-            <div class="pillar-icon-box">02</div>
-            <h3>Solidaritas Kampus</h3>
-            <p>
-                Dibangun atas dasar semangat saling membantu antar sesama mahasiswa.
-                Kami mengutamakan integritas, ketepatan waktu pengantaran, dan transparansi tarif
-                yang bersahabat di kantong mahasiswa.
-            </p>
-        </div>
-
-        <div class="about-card-pillar">
-            <div class="pillar-icon-box">03</div>
-            <h3>Kontak & Informasi</h3>
-            <div style="margin-top: 14px;">
-                <div class="contact-row-item">
-                    
+                <div class="ps-cta-box">
                     <div>
-                        <strong>Kampus Polindra</strong>
-                        <div style="font-size: 11px; color: #64748b;">Jl. Raya Lohbener Lama No. 08, Indramayu</div>
+                        <h2>Mager Keluar<br>atau Butuh Bantuan?</h2>
+                        <p>
+                            Percayakan kebutuhan harianmu kepada driver
+                            Polindra Suruh sekarang.
+                        </p>
                     </div>
+
+                    <a href="<?= !$login
+                        ? 'login.php?redirect=pilih_driver'
+                        : ($role === 'user'
+                            ? 'pilih_driver.php'
+                            : ($role === 'admin'
+                                ? 'admin/index.php'
+                                : 'driver.php')) ?>"
+                       class="ps-btn ps-btn-dark">
+                        <?= !$login ? 'Masuk Sekarang' : 'Mulai Suruh Sekarang' ?> &rarr;
+                    </a>
                 </div>
 
-                <div class="contact-row-item">
-                    
-                    <div>
-                        <strong>WhatsApp CS</strong>
-                        <div style="font-size: 11px; color: #047857; font-weight: 700;">0895-0729-8091</div>
-                    </div>
-                </div>
+            </div>
+        </section>
 
-                <div class="contact-row-item">
-                    
-                    <div>
-                        <strong>Instagram</strong>
-                        <div style="font-size: 11px; color: #64748b;">@polindrasuruh</div>
-                    </div>
-                </div>
+    </main>
 
-                <div class="contact-row-item">
-                    
-                    <div>
-                        <strong>Jam Layanan</strong>
-                        <div style="font-size: 11px; color: #64748b;">Fleksibel mengikuti jadwal aktifitas kampus</div>
-                    </div>
-                </div>
+    <!-- FOOTER -->
+    <footer class="ps-footer">
+        <div class="ps-container ps-footer-inner">
+            <div>
+                &copy; <?= date('Y') ?> Polindra Suruh &bull;
+                Kampus Polindra, Indramayu
+            </div>
+
+            <div class="ps-footer-links">
+                <a href="index.php#layanan">Layanan</a>
+                <a href="index.php#cara-kerja">Cara Kerja</a>
+                <a href="index.php#driver">Driver</a>
+                <a href="tentang.php">Tentang</a>
             </div>
         </div>
-    </section>
-
-    <!-- BOTTOM CTA BANNER -->
-    <section class="info" style="margin-bottom: 60px;">
-        <div class="info-text">
-            <h2>Mager Keluar atau Butuh Bantuan Cepat?</h2>
-            <p>
-                Percayakan kebutuhan belanja kantin, antar jemput barang, dan suruhan harianmu
-                kepada driver mahasiswa Polindra Suruh sekarang.
-            </p>
-        </div>
-
-        <a href="<?= !$login
-            ? 'login.php?redirect=pilih_driver'
-            : ($role === 'user'
-                ? 'pilih_driver.php'
-                : ($role === 'admin'
-                    ? 'admin/index.php'
-                    : 'driver.php')) ?>"
-           class="info-button">
-            <?= !$login ? 'LOGIN UNTUK PESAN' : 'MULAI SURUH SEKARANG →' ?>
-        </a>
-    </section>
+    </footer>
 
 </body>
 </html>

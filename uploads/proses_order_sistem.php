@@ -1,6 +1,6 @@
 <?php
 error_reporting(E_ALL);
-ini_set('display_errors', 0);
+ini_set('display_errors', 1);
 
 session_start();
 require_once dirname(__DIR__) . '/koneksi.php';
@@ -52,13 +52,14 @@ $isAntarJemput = (stripos($layanan_input, 'antar') !== false || stripos($layanan
 $isBeresinKost = (stripos($layanan_input, 'kost') !== false || stripos($layanan_input, 'beres') !== false);
 
 // Ambil lokasi GPS realtime driver terpilih untuk perhitungan jarak ke pelanggan
+// Ambil lokasi GPS realtime driver terpilih untuk perhitungan jarak ke pelanggan
 if ($driver_id) {
-    $stmtDrvLoc = $pdo->prepare("SELECT lat, lng, nama_driver FROM drivers WHERE user_id = ? LIMIT 1");
+    $stmtDrvLoc = $pdo->prepare("SELECT lat, lng FROM drivers WHERE user_id = ? LIMIT 1");
     $stmtDrvLoc->execute([$driver_id]);
     $drvLoc = $stmtDrvLoc->fetch(PDO::FETCH_ASSOC);
     if ($drvLoc && !empty($drvLoc['lat']) && !empty($drvLoc['lng'])) {
-        $pickup_lat = (string)$drvLoc['lat'];
-        $pickup_lng = (string)$drvLoc['lng'];
+        $pickup_lat = (string) $drvLoc['lat'];
+        $pickup_lng = (string) $drvLoc['lng'];
     }
 }
 
@@ -234,7 +235,8 @@ try {
     exit;
 
 } catch (Throwable $e) {
-    error_log($e->getMessage());
-    header('Location: ../pesanan_saya.php?pesan=gagal');
+    echo '<h2>Error saat memproses pesanan</h2>';
+    echo '<pre>' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</pre>';
+    echo '<pre>File: ' . htmlspecialchars($e->getFile(), ENT_QUOTES, 'UTF-8') . ' (Line ' . (int) $e->getLine() . ')</pre>';
     exit;
 }
