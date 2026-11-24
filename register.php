@@ -8,135 +8,212 @@ require_once "koneksi.php";
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daftar - Polindra Suruh</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=<?= filemtime(__DIR__ . '/assets/css/style.css') ?>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800;900&family=Archivo+Black&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/home.css?v=<?= filemtime(__DIR__ . '/assets/css/home.css') ?>">
 </head>
-<body class="page-auth page-santo-auth page-register">
+<body class="ps-auth-body ps-register-page">
 
-    <div class="santo-auth-wrapper">
-        <!-- TOP: HERO BANNER -->
-        <div class="santo-hero-banner">
-            <div class="santo-hero-glow-aura"></div>
-            <div class="santo-hero-overlay">
-                <div class="santo-hero-mascot-wrap">
-                    <img src="assets/img/mascot-motor.png?v=<?= filemtime(__DIR__ . '/assets/img/mascot-motor.png') ?>" alt="Polindra Suruh" class="santo-hero-mascot">
+    <div class="ps-auth">
+        <!-- PANEL KIRI: SAMA PERSIS SEPERTI LOGIN -->
+        <aside class="ps-auth-side">
+            <a href="index.php" class="ps-auth-logo ps-logo ps-reg-brand">
+    <span class="ps-reg-brand-badge">PS</span>
+    <span class="ps-reg-brand-text">Polindra Suruh</span>
+</a>
+
+            <div class="ps-auth-welcome">
+                <span class="ps-pill">DAFTAR AKUN</span>
+                <h1 class="ps-auth-title">
+                    <span class="ps-line"><span class="ps-word" style="--d:.05s">AYO,</span></span>
+                    <span class="ps-line"><span class="ps-word ps-word-hl" style="--d:.14s">GABUNG</span></span>
+                    <span class="ps-line"><span class="ps-word" style="--d:.22s">SEKARANG!</span></span>
+                </h1>
+                <div class="ps-auth-rotator">
+                    <span>Mau</span>
+                    <b id="psRotatorText">suruh apa</b>
+                    <span>?</span>
                 </div>
-                <h1 class="santo-hero-tagline">Mau suruh apa hari ini?</h1>
             </div>
-        </div>
 
-        <!-- BOTTOM: FORM CARD -->
-        <div class="santo-form-card">
+            <!-- Maskot mengikuti struktur CSS auth -->
+            <div class="ps-auth-mascot" id="authMascot">
+                <div class="ps-auth-bubble">YUK DAFTAR!</div>
+                <div class="ps-auth-sticker">DAFTAR DULU<br>BARU SURUH!</div>
+                <div class="ps-auth-blob"></div>
+                <div class="ps-auth-tilt" id="authMascotTilt">
+                    <img src="assets/img/mascot.png?v=<?= file_exists(__DIR__ . '/assets/img/mascot.png') ? filemtime(__DIR__ . '/assets/img/mascot.png') : time() ?>"
+                         alt="Maskot Polindra Suruh"
+                         class="ps-auth-mascot-img">
+                </div>
+            </div>
+        </aside>
 
-            <!-- ========== STEP 1: DATA PENDAFTARAN ========== -->
-            <div id="step1" class="santo-step active">
-                <div class="santo-form-header">
-                    <h2>Daftar Akun</h2>
-                    <p>Verifikasi nomor WhatsApp untuk mendaftar</p>
+        <!-- PANEL KANAN: KARTU FORM REGISTER & OTP -->
+        <main class="ps-auth-main">
+            <div class="ps-auth-card">
+
+                <!-- ========== STEP 1: DATA PENDAFTARAN ========== -->
+                <div id="step1" class="ps-step active">
+                    <div class="ps-auth-head">
+                        <h2>DAFTAR</h2>
+                        <p>Verifikasi nomor WhatsApp untuk mendaftar</p>
+                    </div>
+
+                    <div id="alertStep1" class="ps-alert ps-alert-error" style="display: none;"></div>
+
+                    <form id="formStep1" class="ps-auth-form" autocomplete="off">
+                        <!-- Anti-bot honeypot -->
+                        <div style="display:none;" aria-hidden="true">
+                            <input type="text" name="website_trap" tabindex="-1" autocomplete="off">
+                        </div>
+
+                        <label class="ps-field">
+                            <span>Nomor WhatsApp</span>
+                            <input type="tel"
+                                   name="no_wa"
+                                   id="inputNoWa"
+                                   class="ps-input"
+                                   placeholder="Contoh: 081234567890"
+                                   inputmode="tel"
+                                   maxlength="20"
+                                   required
+                                   autofocus>
+                        </label>
+
+                        <label class="ps-field">
+                            <span>Username</span>
+                            <input type="text"
+                                   name="username"
+                                   id="inputUsername"
+                                   class="ps-input"
+                                   placeholder="Username (tanpa spasi)"
+                                   maxlength="30"
+                                   required
+                                   autocomplete="username">
+                        </label>
+
+                        <label class="ps-field">
+                            <span>Password</span>
+                            <div class="ps-input-wrap">
+                                <input type="password"
+                                       name="password"
+                                       id="inputPassword"
+                                       class="ps-input"
+                                       placeholder="Buat Password (minimal 6 karakter)"
+                                       minlength="6"
+                                       required
+                                       autocomplete="new-password">
+                                <button type="button" class="ps-eye" id="togglePassword" onclick="togglePassVisibility()">Lihat</button>
+                            </div>
+                        </label>
+
+                        <button type="submit" class="ps-reg-submit" id="btnSendOtp">
+                            <span id="btnSendOtpText">Kirim Kode OTP →</span>
+                            <span id="btnSendOtpLoading" style="display: none;">Mengirim OTP...</span>
+                        </button>
+                    </form>
+
+                    <div class="ps-auth-foot">
+                        Sudah mempunyai akun? <a href="login.php">Login</a>
+                    </div>
+                    <div class="ps-auth-back">
+                        <a href="index.php">← Kembali ke Beranda</a>
+                    </div>
                 </div>
 
-                <div id="alertStep1" class="alert alert-error" style="display: none;"></div>
-
-                <form id="formStep1" class="santo-form" autocomplete="off">
-                    <!-- Anti-bot honeypot -->
-                    <div style="display:none;" aria-hidden="true">
-                        <input type="text" name="website_trap" tabindex="-1" autocomplete="off">
+                <!-- ========== STEP 2: VERIFIKASI OTP ========== -->
+                <div id="step2" class="ps-step">
+                    <div class="ps-auth-head">
+                        <h2>VERIFIKASI OTP</h2>
+                        <p>Masukkan 6 digit kode yang dikirim ke</p>
+                        <p class="ps-otp-target-wa" id="displayMaskedWa"></p>
                     </div>
 
-                    <div class="santo-input-group">
-                        <input type="tel"
-                               name="no_wa"
-                               id="inputNoWa"
-                               class="santo-input"
-                               placeholder="Nomor WhatsApp (Contoh: 081234567890)"
-                               inputmode="tel"
-                               maxlength="20"
-                               required
-                               autofocus>
+                    <div id="alertStep2" class="ps-alert ps-alert-error" style="display: none;"></div>
+
+                    <!-- DEV MODE banner -->
+                    <div id="devModeBanner" class="ps-dev-banner" style="display: none;">
+                        <strong>🛠️ MODE TESTING</strong>
+                        <div>Kode OTP Anda: <strong id="devOtpDisplay"></strong></div>
                     </div>
 
-                    <div class="santo-input-group">
-                        <input type="text"
-                               name="username"
-                               id="inputUsername"
-                               class="santo-input"
-                               placeholder="Username (tanpa spasi)"
-                               maxlength="30"
-                               required
-                               autocomplete="username">
+                    <div class="ps-otp-wrap">
+                        <input type="text" inputmode="numeric" maxlength="1" class="ps-otp-input" data-index="0" autocomplete="one-time-code">
+                        <input type="text" inputmode="numeric" maxlength="1" class="ps-otp-input" data-index="1">
+                        <input type="text" inputmode="numeric" maxlength="1" class="ps-otp-input" data-index="2">
+                        <input type="text" inputmode="numeric" maxlength="1" class="ps-otp-input" data-index="3">
+                        <input type="text" inputmode="numeric" maxlength="1" class="ps-otp-input" data-index="4">
+                        <input type="text" inputmode="numeric" maxlength="1" class="ps-otp-input" data-index="5">
                     </div>
 
-                    <div class="santo-input-group">
-                        <input type="password"
-                               name="password"
-                               id="inputPassword"
-                               class="santo-input"
-                               placeholder="Buat Password (minimal 6 karakter)"
-                               minlength="6"
-                               required
-                               autocomplete="new-password">
+                    <div class="ps-otp-timer" id="otpTimerWrap">
+                        <span id="otpTimerText">Kirim ulang dalam <strong id="countdown">60</strong> detik</span>
+                        <button type="button" id="btnResend" class="ps-otp-resend" style="display: none;" onclick="resendOTP()">Kirim Ulang OTP</button>
                     </div>
 
-                    <button type="submit" class="santo-btn-submit" id="btnSendOtp">
-                        <span id="btnSendOtpText">Kirim Kode OTP</span>
-                        <span id="btnSendOtpLoading" style="display: none;">Mengirim OTP...</span>
+                    <button type="button" class="ps-reg-submit" id="btnVerify" onclick="verifyOTP()">
+                        <span id="btnVerifyText">Verifikasi &amp; Daftar →</span>
+                        <span id="btnVerifyLoading" style="display: none;">Memverifikasi...</span>
                     </button>
-                </form>
 
-                <div class="santo-auth-footer">
-                    Sudah mempunyai akun? <a href="login.php">Login</a>
+                    <div class="ps-otp-back">
+                        <button type="button" class="ps-link-btn" onclick="backToStep1()">← Ubah nomor / data</button>
+                    </div>
                 </div>
-                <div class="santo-back-home">
-                    <a href="index.php">← Kembali ke Beranda</a>
-                </div>
+
             </div>
-
-            <!-- ========== STEP 2: VERIFIKASI OTP ========== -->
-            <div id="step2" class="santo-step">
-                <div class="santo-form-header">
-                    <h2>Verifikasi OTP</h2>
-                    <p>Masukkan 6 digit kode yang dikirim ke</p>
-                    <p class="santo-otp-target-wa" id="displayMaskedWa"></p>
-                </div>
-
-                <div id="alertStep2" class="alert alert-error" style="display: none;"></div>
-
-                <!-- DEV MODE banner -->
-                <div id="devModeBanner" class="santo-dev-banner" style="display: none;">
-                    <strong>🛠️ MODE TESTING</strong>
-                    <div>Kode OTP Anda: <strong id="devOtpDisplay"></strong></div>
-                </div>
-
-                <div class="santo-otp-wrap">
-                    <input type="text" inputmode="numeric" maxlength="1" class="santo-otp-input" data-index="0" autocomplete="one-time-code">
-                    <input type="text" inputmode="numeric" maxlength="1" class="santo-otp-input" data-index="1">
-                    <input type="text" inputmode="numeric" maxlength="1" class="santo-otp-input" data-index="2">
-                    <input type="text" inputmode="numeric" maxlength="1" class="santo-otp-input" data-index="3">
-                    <input type="text" inputmode="numeric" maxlength="1" class="santo-otp-input" data-index="4">
-                    <input type="text" inputmode="numeric" maxlength="1" class="santo-otp-input" data-index="5">
-                </div>
-
-                <div class="santo-otp-timer" id="otpTimerWrap">
-                    <span id="otpTimerText">Kirim ulang dalam <strong id="countdown">60</strong> detik</span>
-                    <button type="button" id="btnResend" class="santo-otp-resend" style="display: none;" onclick="resendOTP()">Kirim Ulang OTP</button>
-                </div>
-
-                <button type="button" class="santo-btn-submit" id="btnVerify" onclick="verifyOTP()">
-                    <span id="btnVerifyText">Verifikasi & Daftar</span>
-                    <span id="btnVerifyLoading" style="display: none;">Memverifikasi...</span>
-                </button>
-
-                <div class="santo-otp-back">
-                    <button type="button" class="santo-link-btn" onclick="backToStep1()">← Ubah nomor / data</button>
-                </div>
-            </div>
-
-        </div>
+        </main>
     </div>
 
 <script>
+// ===========================================================================
+// MASCOT TILT & ROTATOR INTERACTION
+// ===========================================================================
+(function() {
+    const mascotArea = document.getElementById('authMascot');
+    const mascotTilt = document.getElementById('authMascotTilt');
+    if (mascotArea && mascotTilt) {
+        mascotArea.addEventListener('mousemove', function(e) {
+            const rect = mascotArea.getBoundingClientRect();
+            const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 2;
+            const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 2;
+            mascotTilt.style.transform = `translate3d(${nx * 8}px, ${ny * 6}px, 0) rotate(${nx * 2.5}deg)`;
+        });
+        mascotArea.addEventListener('mouseleave', function() {
+            mascotTilt.style.transform = '';
+        });
+    }
+
+    const rotatorEl = document.getElementById('psRotatorText');
+    const phrases = ['suruh apa', 'belanja apa', 'titip apa'];
+    let pIdx = 0;
+    if (rotatorEl) {
+        setInterval(() => {
+            rotatorEl.classList.add('out');
+            setTimeout(() => {
+                pIdx = (pIdx + 1) % phrases.length;
+                rotatorEl.textContent = phrases[pIdx];
+                rotatorEl.classList.remove('out');
+            }, 260);
+        }, 2600);
+    }
+})();
+
+function togglePassVisibility() {
+    const input = document.getElementById('inputPassword');
+    const btn = document.getElementById('togglePassword');
+    if (!input || !btn) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = 'Sembunyi';
+    } else {
+        input.type = 'password';
+        btn.textContent = 'Lihat';
+    }
+}
+
 // ===========================================================================
 // REGISTRATION OTP FLOW - POLINDRA SURUH
 // ===========================================================================
@@ -211,7 +288,7 @@ document.getElementById('formStep1').addEventListener('submit', function(e) {
 
                 // Focus first OTP input
                 clearOtpInputs();
-                document.querySelector('.santo-otp-input[data-index="0"]').focus();
+                document.querySelector('.ps-otp-input[data-index="0"]').focus();
 
                 // Start countdown
                 startCountdown(countdownSeconds);
@@ -227,7 +304,7 @@ document.getElementById('formStep1').addEventListener('submit', function(e) {
 
 // ----- STEP 2: VERIFIKASI OTP -----
 function verifyOTP() {
-    const otpInputs = document.querySelectorAll('.santo-otp-input');
+    const otpInputs = document.querySelectorAll('.ps-otp-input');
     let otpCode = '';
     otpInputs.forEach(inp => otpCode += inp.value);
 
@@ -253,7 +330,6 @@ function verifyOTP() {
             setLoading('btnVerify', 'btnVerifyText', 'btnVerifyLoading', false);
 
             if (data.success) {
-                // Registrasi berhasil!
                 showAlert('alertStep2', data.message, 'success');
                 document.getElementById('btnVerify').disabled = true;
 
@@ -264,17 +340,15 @@ function verifyOTP() {
                 showAlert('alertStep2', data.message);
 
                 if (data.expired) {
-                    // OTP expired: tampilkan tombol kirim ulang
                     document.getElementById('otpTimerText').style.display = 'none';
                     document.getElementById('btnResend').style.display = 'inline';
                 }
 
-                // Shake & clear OTP inputs
-                const wrap = document.querySelector('.santo-otp-wrap');
+                const wrap = document.querySelector('.ps-otp-wrap');
                 wrap.classList.add('shake');
                 setTimeout(() => wrap.classList.remove('shake'), 500);
                 clearOtpInputs();
-                document.querySelector('.santo-otp-input[data-index="0"]').focus();
+                document.querySelector('.ps-otp-input[data-index="0"]').focus();
             }
         })
         .catch(() => {
@@ -308,7 +382,7 @@ function resendOTP() {
                 countdownSeconds = data.cooldown || 60;
                 startCountdown(countdownSeconds);
                 clearOtpInputs();
-                document.querySelector('.santo-otp-input[data-index="0"]').focus();
+                document.querySelector('.ps-otp-input[data-index="0"]').focus();
                 showAlert('alertStep2', 'Kode OTP baru telah dikirim!', 'success');
 
                 if (data.dev_otp) {
@@ -341,17 +415,15 @@ function backToStep1() {
 // ===========================================================================
 // OTP INPUT UX (Auto-advance, paste, backspace)
 // ===========================================================================
-const otpInputs = document.querySelectorAll('.santo-otp-input');
+const otpInputs = document.querySelectorAll('.ps-otp-input');
 
 otpInputs.forEach((input, idx) => {
-    // Ketik angka → pindah ke kotak berikutnya
-    input.addEventListener('input', function(e) {
+    input.addEventListener('input', function() {
         const val = this.value.replace(/\D/g, '');
         this.value = val.slice(0, 1);
         if (val && idx < otpInputs.length - 1) {
             otpInputs[idx + 1].focus();
         }
-        // Auto-verify ketika 6 digit terisi
         if (idx === otpInputs.length - 1 && val) {
             let full = '';
             otpInputs.forEach(i => full += i.value);
@@ -361,7 +433,6 @@ otpInputs.forEach((input, idx) => {
         }
     });
 
-    // Backspace → pindah ke kotak sebelumnya
     input.addEventListener('keydown', function(e) {
         if (e.key === 'Backspace' && !this.value && idx > 0) {
             otpInputs[idx - 1].focus();
@@ -373,7 +444,6 @@ otpInputs.forEach((input, idx) => {
         }
     });
 
-    // Paste support: paste 6 digit sekaligus
     input.addEventListener('paste', function(e) {
         e.preventDefault();
         const pasted = (e.clipboardData.getData('text') || '').replace(/\D/g, '').slice(0, 6);
@@ -390,7 +460,6 @@ otpInputs.forEach((input, idx) => {
         }
     });
 
-    // Select all on focus
     input.addEventListener('focus', function() {
         this.select();
     });
@@ -428,7 +497,7 @@ function startCountdown(seconds) {
 function showAlert(id, msg, type) {
     const el = document.getElementById(id);
     el.textContent = msg;
-    el.className = 'alert ' + (type === 'success' ? 'alert-success' : 'alert-error');
+    el.className = 'ps-alert ' + (type === 'success' ? 'ps-alert-success' : 'ps-alert-error');
     el.style.display = 'block';
 }
 
