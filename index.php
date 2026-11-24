@@ -127,9 +127,9 @@ if (empty($marqueeItems)) {
                         <?php elseif ($role === "driver"): ?>
                             <a href="driver.php" class="ps-btn ps-btn-yellow">Dashboard Driver &rarr;</a>
                         <?php else: ?>
-                            <a href="layanan.php" class="ps-btn ps-btn-yellow">Mulai Suruh Sekarang &rarr;</a>
-                            <a href="login.php" class="ps-btn ps-btn-ghost">Masuk / Daftar</a>
-                        <?php endif; ?>
+    <a href="index.php#layanan" class="ps-btn ps-btn-yellow">Mulai Suruh Sekarang &rarr;</a>
+    <a href="login.php" class="ps-btn ps-btn-ghost">Masuk / Daftar</a>
+<?php endif; ?>
                     </div>
 
                     <div class="ps-hero-stats">
