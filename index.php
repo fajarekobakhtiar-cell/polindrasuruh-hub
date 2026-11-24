@@ -282,8 +282,8 @@ if (empty($marqueeItems)) {
         <div class="ps-container ps-footer-inner">
             <div>&copy; <?= date('Y') ?> Polindra Suruh &bull; Kampus Polindra, Indramayu</div>
             <div class="ps-footer-links">
-                <a href="layanan.php">Layanan</a>
-                <a href="cara_suruh.php">Cara Suruh</a>
+                <a href="index.php#layanan">Layanan</a>
+                <a href="index.php#cara-kerja">Cara Suruh</a>
                 <a href="tentang.php">Tentang</a>
             </div>
         </div>
