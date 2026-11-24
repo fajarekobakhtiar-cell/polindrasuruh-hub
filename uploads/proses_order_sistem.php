@@ -151,14 +151,10 @@ try {
     if ($isBeresinKost) {
         $statusPesanan = $driver_id ? 'Menunggu Penyesuaian Driver' : 'Menunggu Penyesuaian Harga';
     } elseif ($infoTarif['is_otomatis']) {
-        // Layanan tarif otomatis (Suruh Beli Makanan/Minuman, Galon, Print, Antar Jemput):
-        if ($metode_bayar === 'qris') {
-            // Sudah ada harga pasti, jika ada driver langsung bayar QRIS Admin!
-            $statusPesanan = $driver_id ? 'Menunggu Pembayaran' : 'Menunggu Driver';
-        } else {
-            // Cash: langsung siap diproses
-            $statusPesanan = $driver_id ? 'Diproses' : 'Menunggu Driver';
-        }
+        // Pesanan selalu menunggu konfirmasi driver terlebih dahulu.
+        // Setelah diterima, pembayaran QRIS berubah menjadi Menunggu Pembayaran
+        // dan pembayaran cash berubah menjadi Diproses.
+        $statusPesanan = $driver_id ? 'Menunggu Persetujuan Driver' : 'Menunggu Driver';
     } else {
         // Layanan negosiasi manual:
         $statusPesanan = $driver_id ? 'Menunggu Persetujuan Driver' : 'Menunggu Driver';

@@ -4,6 +4,10 @@ require_once "koneksi.php";
 require_once "includes/midtrans_helper.php";
 require_once "includes/fitur_helper.php";
 
+if (function_exists("prosesAutoTolakTigaMenit")) {
+    prosesAutoTolakTigaMenit($pdo);
+}
+
 // Pastikan pengguna sudah login
 if (!isset($_SESSION["user_id"])) {
     header("Location: login.php?redirect=pesanan_saya");
@@ -178,6 +182,7 @@ $stmt = $pdo->prepare("
         p.alasan_tolak_bayar,
         p.waktu_bayar,
         p.created_at,
+        GREATEST(0, 180 - TIMESTAMPDIFF(SECOND, p.created_at, NOW())) AS sisa_detik_tunggu,
         dr.rating,
         dr.komentar AS ulasan,
         u.nama AS nama_driver,
@@ -206,12 +211,31 @@ foreach ($pesananList as $item) {
         $totalAktif++;
         $pesananAktif[] = $item;
     } else {
-        // Selesai, Dibatalkan, dll → masuk riwayat
+        // Selesai, Dibatalkan, Driver Menolak, dll → masuk riwayat
         if ($item["status"] === "Selesai") $totalSelesai++;
         $pesananRiwayat[] = $item;
     }
 }
 unset($item);
+
+// [TAMBAHAN BARU] Ambil daftar driver aktif untuk fitur pilih ulang driver pada pesanan ditolak
+$driversOnline = [];
+try {
+    $stmtDriversOnline = $pdo->query("
+        SELECT u.id AS user_id,
+               COALESCE(NULLIF(d.nama_driver, ''), u.nama) AS nama_driver,
+               COALESCE(d.rating_rata, 0) AS rating_rata,
+               COALESCE(d.jumlah_rating, 0) AS jumlah_rating
+        FROM users u
+        LEFT JOIN drivers d ON d.user_id = u.id
+        WHERE u.role = 'driver'
+          AND COALESCE(d.status_aktif, u.status_aktif, 0) = 1
+        ORDER BY rating_rata DESC, nama_driver ASC
+    ");
+    $driversOnline = $stmtDriversOnline->fetchAll(PDO::FETCH_ASSOC);
+} catch (Throwable $e) {
+    $driversOnline = [];
+}
 
 $highlightId = isset($_GET["id"]) ? (int) $_GET["id"] : 0;
 $pesanType = $_GET["pesan"] ?? "";
@@ -283,6 +307,13 @@ function formatTanggalIndo($datetimeStr) {
                 <strong>Pesanan Berhasil Dikirim!</strong>
             </div>
         </div>
+    <?php elseif ($pesanType === "auto_ditolak_3_menit"): ?>
+        <div class="alert-box alert-info">
+            <div>
+                <strong>Pesanan Otomatis Ditolak (Batas 3 Menit).</strong>
+                Pesanan tidak diambil driver dalam 3 menit. Silakan pilih ulang driver pada menu Riwayat Pesanan.
+            </div>
+        </div>
     <?php elseif ($pesanType === "bayar_sukses"): ?>
         <div class="payment-success-banner">
             <div class="payment-success-content">
@@ -311,6 +342,17 @@ function formatTanggalIndo($datetimeStr) {
                 <strong>Driver Berhasil Dipilih!</strong>
                 Driver telah ditugaskan untuk menangani Pesanan #<?= (int) $highlightId ?>.
             </div>
+        </div>
+    <?php elseif ($pesanType === "driver_dipilih_ulang"): ?>
+        <div class="alert-box alert-success">
+            <div>
+                <strong>Driver Baru Berhasil Dipilih!</strong>
+                Pesanan lama Anda telah diteruskan ke driver baru dan masuk kembali ke Pesanan Aktif.
+            </div>
+        </div>
+    <?php elseif ($pesanType === "pilih_driver_gagal"): ?>
+        <div class="alert-box alert-info">
+            <div><?= htmlspecialchars((string)($_GET['pesan_error'] ?? 'Gagal memilih ulang driver.'), ENT_QUOTES, 'UTF-8') ?></div>
         </div>
     <?php elseif ($pesanType === "dibatalkan"): ?>
         <div class="alert-box alert-info">
@@ -393,6 +435,7 @@ function formatTanggalIndo($datetimeStr) {
                         <?php
                             $status    = $item['status'] ?? '';
                             $canCancel = in_array($status, ['Menunggu', 'Menunggu Driver', 'Menunggu Persetujuan Driver']);
+                            $sisaTunggu = max(0, (int) ($item['sisa_detik_tunggu'] ?? 180));
                             $waNumber  = normalisasiNomorWA((string)($item['no_hp_driver'] ?? ''));
                             $waMsg = urlencode("Halo kak, saya ingin menanyakan pesanan #PESANAN-" . (int)$item['id'] . " (" . ($item['layanan'] ?? '') . "). Apakah ada yang perlu dikonfirmasi?");
                             $waUrl = $waNumber ? "https://wa.me/{$waNumber}?text={$waMsg}" : '';
@@ -422,6 +465,19 @@ function formatTanggalIndo($datetimeStr) {
                                     <?= htmlspecialchars($status) ?>
                                 </span>
                             </div>
+
+                            <?php if ($canCancel): ?>
+                                <div class="countdown-3m-user"
+                                     data-pesanan-id="<?= (int)$item['id'] ?>"
+                                     data-seconds="<?= $sisaTunggu ?>"
+                                     style="margin-top: 10px; padding: 10px 12px; border-radius: 10px; background: #fffbeb; border: 1px solid #fde68a; color: #92400e; font-size: 12px; font-weight: 700;">
+                                    Batas waktu driver mengambil pesanan:
+                                    <span class="timer-3m-val" style="color: #dc2626; font-weight: 900;"><?= gmdate("i:s", $sisaTunggu) ?></span>
+                                    <div style="font-size: 11px; font-weight: 500; color: #78350f; margin-top: 2px;">
+                                        Jika tidak diambil dalam 3 menit, pesanan otomatis ditolak dan Anda perlu memilih ulang driver.
+                                    </div>
+                                </div>
+                            <?php endif; ?>
 
                             <!-- BADGE METODE BAYAR -->
                             <?php
@@ -732,10 +788,12 @@ function formatTanggalIndo($datetimeStr) {
                 <div style="display:flex; flex-direction:column; gap:12px; margin-bottom: 24px;">
                     <?php foreach ($pesananRiwayat as $row):
                         $stRiwayat = $row["status"] ?? "-";
+                        $isDriverMenolak = in_array($stRiwayat, ['Driver Menolak', 'Ditolak Driver'], true);
                         if ($stRiwayat === "Selesai") { $rIcon = ""; $rColor = "#16a34a"; $rBg = "#f0fdf4"; $rBorder = "#bbf7d0"; }
-                        elseif ($stRiwayat === "Dibatalkan") { $rIcon = ""; $rColor = "#dc2626"; $rBg = "#fef2f2"; $rBorder = "#fecaca"; }
+                        elseif ($stRiwayat === "Dibatalkan" || $isDriverMenolak) { $rIcon = ""; $rColor = "#dc2626"; $rBg = "#fef2f2"; $rBorder = "#fecaca"; }
                         else { $rIcon = ""; $rColor = "#64748b"; $rBg = "#f8fafc"; $rBorder = "#e2e8f0"; }
                         $isSelesai = ($stRiwayat === 'Selesai');
+                        $isDibatalkan = ($stRiwayat === 'Dibatalkan');
                         $buktiFile = trim((string)($row['bukti_antar'] ?? ''));
                         $sudahRating = $row['rating'] !== null;
                     ?>
@@ -760,6 +818,19 @@ function formatTanggalIndo($datetimeStr) {
                                 <span style="font-size:11px; font-weight:700; color:<?= $rColor ?>; padding:4px 10px; border-radius:20px; border:1px solid <?= $rBorder ?>; background:#fff; white-space:nowrap;">
                                     <?= htmlspecialchars($stRiwayat) ?>
                                 </span>
+                                <?php if ($isDibatalkan): ?>
+                                    <a href="pilih_driver.php?pesanan_id=<?= (int)$row["id"] ?>"
+                                       style="font-size:11px; font-weight:800; color:#1d4ed8; background:#eff6ff; border:1px solid #bfdbfe; padding:5px 10px; border-radius:8px; text-decoration:none; white-space:nowrap;">
+                                        Pilih Ulang Driver
+                                    </a>
+                                <?php endif; ?>
+                                <?php if ($isDriverMenolak): ?>
+                                    <button type="button"
+                                            onclick="bukaModalPilihDriverUlang(<?= (int)$row["id"] ?>)"
+                                            style="font-size:11px; font-weight:800; color:#000; background:#ffd21f; border:1.5px solid #000; padding:5px 10px; border-radius:8px; cursor:pointer; white-space:nowrap;">
+                                        Pilih Driver Lain
+                                    </button>
+                                <?php endif; ?>
                             </div>
                         </div>
 
@@ -839,6 +910,44 @@ function formatTanggalIndo($datetimeStr) {
 
 </main>
 
+<!-- [TAMBAHAN BARU] Modal Pilih Ulang Driver pada Pesanan Ditolak -->
+<div id="modalPilihDriverUlang" class="bukti-modal-backdrop" onclick="if(event.target===this) tutupModalPilihDriverUlang();">
+    <div class="bukti-modal-content" onclick="event.stopPropagation()">
+        <div class="bukti-modal-header">
+            <h3 style="margin: 0; font-size: 16px;">Pilih Driver Baru (<span id="labelPesananDriverUlang">#-</span>)</h3>
+            <button type="button" class="bukti-modal-close" onclick="tutupModalPilihDriverUlang()">&times;</button>
+        </div>
+        <?php if (empty($driversOnline)): ?>
+            <div style="padding: 20px; text-align: left;">
+                <p style="margin: 0; font-size: 13px; color: #64748b;">Saat ini belum ada driver yang sedang Online.</p>
+            </div>
+            <div class="bukti-modal-footer">
+                <button type="button" class="btn-close-modal" onclick="tutupModalPilihDriverUlang()">Tutup</button>
+            </div>
+        <?php else: ?>
+            <form method="POST" action="pilih_ulang_driver.php">
+                <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>">
+                <input type="hidden" name="pesanan_id" id="inputPesananIdDriverUlang" value="">
+                <div style="padding: 20px; text-align: left;">
+                    <label style="display: block; font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">Driver Online Tersedia:</label>
+                    <select name="driver_user_id" required style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px; background: #fff; color: #1e293b;">
+                        <?php foreach ($driversOnline as $drv): ?>
+                            <option value="<?= (int) $drv['user_id'] ?>">
+                                <?= htmlspecialchars($drv['nama_driver'], ENT_QUOTES, 'UTF-8') ?>
+                                (★ <?= number_format((float) $drv['rating_rata'], 1) ?> / <?= (int) $drv['jumlah_rating'] ?> ulasan)
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="bukti-modal-footer">
+                    <button type="button" class="btn-close-modal" onclick="tutupModalPilihDriverUlang()">Batal</button>
+                    <button type="submit" class="btn-konfirmasi-qris" style="padding: 9px 18px; font-size: 13px;">Kirim ke Driver Ini</button>
+                </div>
+            </form>
+        <?php endif; ?>
+    </div>
+</div>
+
 <!-- Modal Lightbox Bukti Transfer User -->
 <div id="modalBukti" class="bukti-modal-backdrop" onclick="closeBuktiModal(event)">
     <div class="bukti-modal-content" onclick="event.stopPropagation()">
@@ -883,6 +992,20 @@ function formatTanggalIndo($datetimeStr) {
 </div>
 
 <script>
+// [TAMBAHAN BARU] Handler Modal Pilih Ulang Driver
+function bukaModalPilihDriverUlang(pesananId) {
+    var modal = document.getElementById('modalPilihDriverUlang');
+    if (!modal) return;
+    document.getElementById('inputPesananIdDriverUlang').value = pesananId;
+    document.getElementById('labelPesananDriverUlang').textContent = '#' + pesananId;
+    modal.classList.add('active');
+}
+
+function tutupModalPilihDriverUlang() {
+    var modal = document.getElementById('modalPilihDriverUlang');
+    if (modal) modal.classList.remove('active');
+}
+
 function switchOrderTab(tabId) {
     document.querySelectorAll('.order-tab-btn').forEach(function (btn) {
         btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
@@ -954,6 +1077,36 @@ function redirectBayarSukses(pesananId) {
     window.location.href = 'pesanan_saya.php?id=' + encodeURIComponent(pesananId) + '&tab=aktif&pesan=bayar_sukses';
 }
 
+// === COUNTDOWN 3 MENIT (180 DETIK) AUTO-TOLAK PESANAN ===
+document.addEventListener('DOMContentLoaded', function () {
+    var countdownEls = document.querySelectorAll('.countdown-3m-user');
+    if (countdownEls.length > 0) {
+        var countdownTimer = setInterval(function () {
+            var expiredOrderId = null;
+
+            countdownEls.forEach(function (el) {
+                var sec = parseInt(el.getAttribute('data-seconds') || '0', 10);
+                if (sec > 0) {
+                    sec -= 1;
+                    el.setAttribute('data-seconds', sec);
+                    var mm = String(Math.floor(sec / 60)).padStart(2, '0');
+                    var ss = String(sec % 60).padStart(2, '0');
+                    var valEl = el.querySelector('.timer-3m-val');
+                    if (valEl) valEl.textContent = mm + ':' + ss;
+                }
+                if (sec <= 0 && !expiredOrderId) {
+                    expiredOrderId = el.getAttribute('data-pesanan-id') || '';
+                }
+            });
+
+            if (expiredOrderId !== null) {
+                clearInterval(countdownTimer);
+                window.location.href = 'pesanan_saya.php?tab=riwayat&pesan=auto_ditolak_3_menit';
+            }
+        }, 1000);
+    }
+});
+
 // === REAL-TIME PAYMENT DETECTOR & SIMULATOR ===
 function simulasikanBayarMidtrans(pesananId) {
     var btn = document.getElementById('btnSimulasi_' + pesananId);
@@ -1024,6 +1177,7 @@ document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape') {
         closeBuktiModal();
         closeEditModal();
+        tutupModalPilihDriverUlang();
     }
 });
 </script>

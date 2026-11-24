@@ -20,8 +20,12 @@ if (!isset($_SESSION['user_id']) || ($_SESSION['role'] ?? '') !== 'driver') {
 $driver_id = (int)$_SESSION['user_id'];
 $method = $_SERVER['REQUEST_METHOD'];
 
-// Selalu jalankan pengecekan 2 menit sebelum memproses data
-prosesAutoTolakDuaMenit($pdo);
+// Jalankan pengecekan 3 menit sebelum memproses data pesanan
+if (function_exists('prosesAutoTolakTigaMenit')) {
+    prosesAutoTolakTigaMenit($pdo);
+} elseif (function_exists('prosesAutoTolakDuaMenit')) {
+    prosesAutoTolakDuaMenit($pdo);
+}
 
 if ($method === 'GET') {
     $action = $_GET['action'] ?? 'get_orders';
@@ -29,14 +33,14 @@ if ($method === 'GET') {
         try {
             $stmt = $pdo->prepare("
                 SELECT p.*, u.nama AS nama_pelanggan, u.email AS email_pelanggan,
-                       GREATEST(0, 120 - TIMESTAMPDIFF(SECOND, p.created_at, NOW())) AS sisa_detik_ambil
+                       GREATEST(0, 180 - TIMESTAMPDIFF(SECOND, p.created_at, NOW())) AS sisa_detik_ambil
                 FROM pesanan p
                 JOIN users u ON p.user_id = u.id
                 WHERE (
                     p.driver_id = :driver_id
                     OR (
                         p.driver_id IS NULL
-                        AND p.status IN ('Menunggu Driver', 'Menunggu', 'Menunggu Penyesuaian Harga')
+                        AND p.status IN ('Menunggu Driver', 'Menunggu', 'Menunggu Persetujuan Driver', 'Menunggu Penyesuaian Harga', 'Menunggu Penyesuaian Driver')
                         AND NOT EXISTS (
                             SELECT 1 FROM pesanan_driver_ditolak pd
                             WHERE pd.pesanan_id = p.id AND pd.driver_user_id = :driver_id_tolak
@@ -140,9 +144,13 @@ try {
             exit;
         }
 
-        if ((int)$row['elapsed'] >= 120) {
-            prosesAutoTolakDuaMenit($pdo, $order_id);
-            echo json_encode(['status' => 'error', 'message' => 'Waktu pengambilan 2 menit telah habis. Pesanan otomatis dilepas untuk driver lain.']);
+        if ((int)$row['elapsed'] >= 180) {
+            if (function_exists('prosesAutoTolakTigaMenit')) {
+                prosesAutoTolakTigaMenit($pdo, $order_id);
+            } elseif (function_exists('prosesAutoTolakDuaMenit')) {
+                prosesAutoTolakDuaMenit($pdo, $order_id);
+            }
+            echo json_encode(['status' => 'error', 'message' => 'Waktu pengambilan 3 menit telah habis. Pesanan otomatis dibatalkan.']);
             exit;
         }
 

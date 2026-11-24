@@ -2,7 +2,7 @@
 session_start();
 require_once "koneksi.php";
 require_once "includes/wallet_helper.php";
-require_once "includes/fitur_helper.php";
+require_once __DIR__ . "/includes/fitur_helper.php";
 
 // Pastikan yang login adalah driver
 if (
@@ -17,7 +17,20 @@ $driverId = (int) $_SESSION["user_id"];
 $namaDriver = $_SESSION["nama"] ?? "Driver";
 $notif = $_GET["notif"] ?? "";
 
-// Proses auto-tolak pesanan yang melewati 2 menit (120 detik) tanpa diambil
+// Daftar status pesanan yang masih "menunggu driver"
+$STATUS_MENUNGGU = [
+    "Menunggu",
+    "Menunggu Driver",
+    "Menunggu Persetujuan Driver",
+    "Menunggu Penyesuaian Harga",
+    "Menunggu Penyesuaian Driver",
+];
+
+// Pastikan tabel/kolom penolakan tersedia (otomatis, sekali per request)
+pastikanSkemaPenolakan($pdo);
+
+// Auto-tolak: pesanan yang tidak direspons driver dalam 2 menit (120 detik)
+// dikembalikan ke pelanggan agar memilih driver lain (pesanan tetap sama).
 prosesAutoTolakDuaMenit($pdo);
 
 // Proses perubahan status Aktif / Off
@@ -87,7 +100,7 @@ if (
         $ext = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
         $allowedExtensions = ["jpg", "jpeg", "png", "webp"];
 
-        if (!in_array($ext, $allowedExtensions)) {
+        if (!in_array($ext, $allowedExtensions, true)) {
             header("Location: driver.php?notif=qris_format_salah&tab=settings");
             exit;
         }
@@ -101,14 +114,16 @@ if (
         $mime = "";
         if (function_exists("finfo_open")) {
             $finfo = finfo_open(FILEINFO_MIME_TYPE);
-            $mime = finfo_file($finfo, $fileTmp);
-            finfo_close($finfo);
+            if ($finfo) {
+                $mime = finfo_file($finfo, $fileTmp);
+                finfo_close($finfo);
+            }
         } elseif (function_exists("mime_content_type")) {
             $mime = mime_content_type($fileTmp);
         }
 
         $allowedMimes = ["image/jpeg", "image/png", "image/webp", "image/pjpeg"];
-        if ($mime && !in_array($mime, $allowedMimes)) {
+        if ($mime && !in_array($mime, $allowedMimes, true)) {
             header("Location: driver.php?notif=qris_format_salah&tab=settings");
             exit;
         }
@@ -180,21 +195,27 @@ if (
     $aksi = $_POST["aksi_pesanan"];
 
     if ($aksi === "terima") {
-        $stmtCekMetode = $pdo->prepare("
-            SELECT metode_bayar, TIMESTAMPDIFF(SECOND, created_at, NOW()) AS elapsed
+        $stmtCek = $pdo->prepare("
+            SELECT metode_bayar, status,
+                   TIMESTAMPDIFF(SECOND, COALESCE(diajukan_at, created_at), NOW()) AS elapsed
             FROM pesanan
             WHERE id = :id AND (driver_id IS NULL OR driver_id = :driver_id)
         ");
-        $stmtCekMetode->execute(["id" => $pesananId, "driver_id" => $driverId]);
-        $rowMetode = $stmtCekMetode->fetch(PDO::FETCH_ASSOC);
+        $stmtCek->execute(["id" => $pesananId, "driver_id" => $driverId]);
+        $rowCek = $stmtCek->fetch(PDO::FETCH_ASSOC);
 
-        if ($rowMetode && (int)($rowMetode["elapsed"] ?? 0) >= 120) {
+        if (!$rowCek || !in_array($rowCek["status"], $STATUS_MENUNGGU, true)) {
+            header("Location: driver.php?notif=sudah_diambil&tab=new");
+            exit;
+        }
+
+        if ((int) ($rowCek["elapsed"] ?? 0) >= 120) {
             prosesAutoTolakDuaMenit($pdo, $pesananId);
             header("Location: driver.php?notif=timeout_2_menit&tab=new");
             exit;
         }
 
-        $targetStatus = (($rowMetode["metode_bayar"] ?? "qris") === "cash") ? "Diproses" : "Menunggu Pembayaran";
+        $targetStatus = (($rowCek["metode_bayar"] ?? "qris") === "cash") ? "Diproses" : "Menunggu Pembayaran";
 
         $stmtDrv = $pdo->prepare("SELECT lat, lng FROM drivers WHERE user_id = ? LIMIT 1");
         $stmtDrv->execute([$driverId]);
@@ -202,23 +223,36 @@ if (
         $plat = ($drv && !empty($drv['lat'])) ? $drv['lat'] : '-6.4018000';
         $plng = ($drv && !empty($drv['lng'])) ? $drv['lng'] : '108.2825000';
 
+        $placeholders = implode(",", array_fill(0, count($STATUS_MENUNGGU), "?"));
         $stmt = $pdo->prepare("
             UPDATE pesanan
-            SET status = :status, driver_id = :new_driver_id,
-                pickup_lat = :plat, pickup_lng = :plng
-            WHERE id = :id AND (driver_id IS NULL OR driver_id = :curr_driver_id)
+            SET status = ?, driver_id = ?, pickup_lat = ?, pickup_lng = ?
+            WHERE id = ?
+              AND (driver_id IS NULL OR driver_id = ?)
+              AND status IN ($placeholders)
         ");
-        $stmt->execute([
-            "status" => $targetStatus,
-            "new_driver_id" => $driverId,
-            "plat" => $plat,
-            "plng" => $plng,
-            "id" => $pesananId,
-            "curr_driver_id" => $driverId
-        ]);
+        $stmt->execute(array_merge(
+            [$targetStatus, $driverId, $plat, $plng, $pesananId, $driverId],
+            $STATUS_MENUNGGU
+        ));
+
+        if ($stmt->rowCount() === 0) {
+            header("Location: driver.php?notif=sudah_diambil&tab=new");
+            exit;
+        }
+
         header("Location: driver.php?notif=diterima&tab=running");
         exit;
+
     } elseif ($aksi === "konfirmasi_qris") {
+        // Wajib ada bukti transfer dari pelanggan sebelum dikonfirmasi
+        $stmtBukti = $pdo->prepare("SELECT bukti_bayar FROM pesanan WHERE id = :id AND driver_id = :driver_id");
+        $stmtBukti->execute(["id" => $pesananId, "driver_id" => $driverId]);
+        if (empty($stmtBukti->fetchColumn())) {
+            header("Location: driver.php?notif=bukti_belum_ada&tab=running");
+            exit;
+        }
+
         $stmt = $pdo->prepare("
             UPDATE pesanan
             SET qris_diverifikasi = 1,
@@ -229,6 +263,7 @@ if (
         $stmt->execute(["id" => $pesananId, "driver_id" => $driverId]);
         header("Location: driver.php?notif=qris_diverifikasi&tab=running");
         exit;
+
     } elseif ($aksi === "tolak_qris") {
         $alasanPilihan = trim($_POST["alasan_pilihan"] ?? "");
         $alasanKustom = trim($_POST["alasan_kustom"] ?? "");
@@ -257,51 +292,77 @@ if (
         ]);
         header("Location: driver.php?notif=qris_ditolak&tab=running");
         exit;
+
     } elseif ($aksi === "sesuaikan_harga_kost") {
         $hargaBaru = (int) ($_POST["harga_penyesuaian"] ?? 0);
         $catatanTambahan = trim($_POST["catatan_driver"] ?? "");
         if ($hargaBaru < 5000) $hargaBaru = 15000;
 
-        $stmtCekMetode = $pdo->prepare("SELECT metode_bayar, catatan FROM pesanan WHERE id = :id");
-        $stmtCekMetode->execute(["id" => $pesananId]);
-        $rowMetode = $stmtCekMetode->fetch(PDO::FETCH_ASSOC);
-        $targetStatus = (($rowMetode["metode_bayar"] ?? "qris") === "cash") ? "Diproses" : "Menunggu Pembayaran";
+        $stmtCek = $pdo->prepare("
+            SELECT metode_bayar, catatan, status,
+                   TIMESTAMPDIFF(SECOND, COALESCE(diajukan_at, created_at), NOW()) AS elapsed
+            FROM pesanan
+            WHERE id = :id AND (driver_id IS NULL OR driver_id = :did)
+        ");
+        $stmtCek->execute(["id" => $pesananId, "did" => $driverId]);
+        $rowCek = $stmtCek->fetch(PDO::FETCH_ASSOC);
 
-        $catatanUpdate = $rowMetode["catatan"] ?? "";
+        if (!$rowCek || !in_array($rowCek["status"], $STATUS_MENUNGGU, true)) {
+            header("Location: driver.php?notif=sudah_diambil&tab=new");
+            exit;
+        }
+
+        if ((int) ($rowCek["elapsed"] ?? 0) >= 120) {
+            prosesAutoTolakDuaMenit($pdo, $pesananId);
+            header("Location: driver.php?notif=timeout_2_menit&tab=new");
+            exit;
+        }
+
+        $targetStatus = (($rowCek["metode_bayar"] ?? "qris") === "cash") ? "Diproses" : "Menunggu Pembayaran";
+
+        $catatanUpdate = $rowCek["catatan"] ?? "";
         if ($catatanTambahan !== "") {
             $catatanUpdate .= "\n[Catatan Driver]: " . $catatanTambahan;
         }
 
+        $placeholders = implode(",", array_fill(0, count($STATUS_MENUNGGU), "?"));
         $stmt = $pdo->prepare("
             UPDATE pesanan
-            SET total_tarif = :total_tarif,
-                driver_id = :driver_id,
-                status = :status,
-                catatan = :catatan
-            WHERE id = :id
+            SET total_tarif = ?, driver_id = ?, status = ?, catatan = ?
+            WHERE id = ?
+              AND (driver_id IS NULL OR driver_id = ?)
+              AND status IN ($placeholders)
         ");
-        $stmt->execute([
-            "total_tarif" => $hargaBaru,
-            "driver_id" => $driverId,
-            "status" => $targetStatus,
-            "catatan" => $catatanUpdate,
-            "id" => $pesananId
-        ]);
+        $stmt->execute(array_merge(
+            [$hargaBaru, $driverId, $targetStatus, $catatanUpdate, $pesananId, $driverId],
+            $STATUS_MENUNGGU
+        ));
+
+        if ($stmt->rowCount() === 0) {
+            header("Location: driver.php?notif=sudah_diambil&tab=new");
+            exit;
+        }
+
         header("Location: driver.php?notif=harga_disesuaikan&tab=running");
         exit;
+
     } elseif ($aksi === "tolak") {
-        catatPenolakanDriver($pdo, $pesananId, $driverId, 'manual_reject');
+        // Pesanan dikembalikan ke pelanggan (status "Driver Menolak")
+        // agar pelanggan memilih driver lain pada pesanan yang sama.
+        tolakPesananOlehDriver($pdo, $pesananId, $driverId);
         header("Location: driver.php?notif=ditolak&tab=new");
         exit;
+
     } elseif ($aksi === "antar") {
         $stmt = $pdo->prepare("
             UPDATE pesanan
             SET status = 'Dalam Perjalanan'
-            WHERE id = :id AND driver_id = :driver_id
+            WHERE id = :id AND driver_id = :driver_id AND status = 'Diproses'
         ");
         $stmt->execute(["id" => $pesananId, "driver_id" => $driverId]);
         header("Location: driver.php?notif=antar&tab=running");
         exit;
+
     } elseif ($aksi === "selesai") {
         // Wajib mengunggah bukti pengantaran untuk semua layanan
         $uploadRes = uploadBuktiAntarWajib($_FILES["bukti_antar"] ?? [], $pesananId, $driverId);
@@ -393,22 +454,28 @@ if ($driverDbId > 0) {
     $totalDitarik = (int) $stmtTotalTarik->fetchColumn();
 }
 
-// Ambil pesanan driver (mengecualikan pesanan yang sudah ditolak/auto-tolak oleh driver ini)
+// Ambil pesanan driver:
+// - pesanan milik driver ini, atau
+// - pesanan bebas yang masih menunggu, belum ditolak driver ini, dan belum lewat 2 menit
 $stmt = $pdo->prepare(
     "SELECT p.*, u.nama AS nama_pelanggan, u.no_wa AS wa_pelanggan, u.email AS email_pelanggan,
-            GREATEST(0, 120 - TIMESTAMPDIFF(SECOND, p.created_at, NOW())) AS sisa_detik_ambil
+            GREATEST(0, 120 - TIMESTAMPDIFF(SECOND, COALESCE(p.diajukan_at, p.created_at), NOW())) AS sisa_detik_ambil
      FROM pesanan p
      JOIN users u ON p.user_id = u.id
      WHERE (
          p.driver_id = :driver_id
          OR (
              p.driver_id IS NULL
-             AND p.status IN ('Menunggu Driver', 'Menunggu', 'Menunggu Penyesuaian Harga')
+             AND p.status IN ('Menunggu Driver', 'Menunggu', 'Menunggu Persetujuan Driver', 'Menunggu Penyesuaian Harga', 'Menunggu Penyesuaian Driver')
              AND NOT EXISTS (
                  SELECT 1 FROM pesanan_driver_ditolak pd
                  WHERE pd.pesanan_id = p.id AND pd.driver_user_id = :driver_id_tolak
              )
          )
+     )
+     AND NOT (
+         p.status IN ('Menunggu Driver', 'Menunggu', 'Menunggu Persetujuan Driver', 'Menunggu Penyesuaian Harga', 'Menunggu Penyesuaian Driver')
+         AND TIMESTAMPDIFF(SECOND, COALESCE(p.diajukan_at, p.created_at), NOW()) >= 120
      )
      ORDER BY p.id DESC"
 );
@@ -425,9 +492,9 @@ $totalPendapatan = 0;
 
 foreach ($pesanan as $p) {
     $st = $p["status"];
-    if (in_array($st, ["Menunggu Driver", "Menunggu Persetujuan Driver", "Menunggu", "Menunggu Penyesuaian Harga", "Menunggu Penyesuaian Driver"])) {
+    if (in_array($st, $STATUS_MENUNGGU, true)) {
         $pesananBaru[] = $p;
-    } elseif (in_array($st, ["Menunggu Pembayaran", "Diproses", "Dalam Perjalanan"])) {
+    } elseif (in_array($st, ["Menunggu Pembayaran", "Diproses", "Dalam Perjalanan"], true)) {
         $pesananBerjalan[] = $p;
     } else {
         $pesananSelesai[] = $p;
@@ -438,6 +505,7 @@ foreach ($pesanan as $p) {
 }
 
 $activeTab = $_GET["tab"] ?? (!empty($pesananBaru) ? 'new' : (!empty($pesananBerjalan) ? 'running' : 'new'));
+$cssPath = __DIR__ . '/assets/css/style.css';
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -445,7 +513,7 @@ $activeTab = $_GET["tab"] ?? (!empty($pesananBaru) ? 'new' : (!empty($pesananBer
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Driver - Polindra Suruh</title>
-    <link rel="stylesheet" href="assets/css/style.css?v=<?= filemtime(__DIR__ . '/assets/css/style.css') ?>">
+    <link rel="stylesheet" href="assets/css/style.css?v=<?= file_exists($cssPath) ? filemtime($cssPath) : time() ?>">
 </head>
 
 <body class="page-driver">
@@ -459,14 +527,20 @@ $activeTab = $_GET["tab"] ?? (!empty($pesananBaru) ? 'new' : (!empty($pesananBer
         <div class="driver-alert alert-success">Status operasional Anda berhasil diperbarui!</div>
     <?php elseif ($notif === "diterima"): ?>
         <div class="driver-alert alert-success">Pesanan berhasil diterima! Silakan cek di tab "Sedang Berjalan".</div>
+    <?php elseif ($notif === "sudah_diambil"): ?>
+        <div class="driver-alert alert-warning">Pesanan sudah diambil driver lain atau tidak tersedia lagi.</div>
+    <?php elseif ($notif === "harga_disesuaikan"): ?>
+        <div class="driver-alert alert-success">Harga ditetapkan dan pesanan berhasil diterima.</div>
     <?php elseif ($notif === "ditolak"): ?>
-        <div class="driver-alert alert-info">Pesanan telah ditolak untuk akun Anda dan tetap tersedia untuk driver lain.</div>
+        <div class="driver-alert alert-info">Pesanan ditolak. Pelanggan akan diminta memilih driver lain pada pesanan yang sama.</div>
     <?php elseif ($notif === "timeout_2_menit"): ?>
-        <div class="driver-alert alert-warning">Waktu pengambilan pesanan 2 menit telah habis dan otomatis dilepas untuk driver lain.</div>
+        <div class="driver-alert alert-warning">Waktu respons 2 menit telah habis. Pesanan dikembalikan ke pelanggan untuk memilih driver lain.</div>
     <?php elseif ($notif === "bukti_antar_wajib"): ?>
         <div class="driver-alert alert-warning"><?= htmlspecialchars($_GET["pesan_error"] ?? "Foto bukti pengantaran wajib diunggah untuk semua layanan sebelum menyelesaikan pesanan.") ?></div>
     <?php elseif ($notif === "gagal_selesai"): ?>
         <div class="driver-alert alert-warning"><?= htmlspecialchars($_GET["pesan_error"] ?? "Gagal menyelesaikan pesanan.") ?></div>
+    <?php elseif ($notif === "bukti_belum_ada"): ?>
+        <div class="driver-alert alert-warning">Pelanggan belum mengunggah bukti transfer.</div>
     <?php elseif ($notif === "qris_diverifikasi"): ?>
         <div class="driver-alert alert-success">Pembayaran QRIS telah diverifikasi sah! Pesanan siap diantar.</div>
     <?php elseif ($notif === "qris_ditolak"): ?>
@@ -481,6 +555,14 @@ $activeTab = $_GET["tab"] ?? (!empty($pesananBaru) ? 'new' : (!empty($pesananBer
         <div class="driver-alert alert-success">Foto QRIS pribadi Anda berhasil diunggah!</div>
     <?php elseif ($notif === "qris_dihapus"): ?>
         <div class="driver-alert alert-info">Foto QRIS telah dihapus.</div>
+    <?php elseif ($notif === "qris_format_salah"): ?>
+        <div class="driver-alert alert-warning">Format foto QRIS harus JPG, PNG, atau WEBP.</div>
+    <?php elseif ($notif === "qris_terlalu_besar"): ?>
+        <div class="driver-alert alert-warning">Ukuran foto QRIS maksimal 3 MB.</div>
+    <?php elseif ($notif === "qris_gagal_upload"): ?>
+        <div class="driver-alert alert-warning">Gagal mengunggah foto QRIS. Coba lagi.</div>
+    <?php elseif ($notif === "qris_pilih_file"): ?>
+        <div class="driver-alert alert-warning">Pilih file foto QRIS terlebih dahulu.</div>
     <?php elseif ($notif === "tarik_sukses"): ?>
         <div class="driver-alert alert-success">Pengajuan penarikan dana berhasil dikirim! Admin akan segera memproses transfer ke rekening/e-wallet Anda.</div>
     <?php elseif ($notif === "tarik_gagal"): ?>
@@ -616,14 +698,14 @@ $activeTab = $_GET["tab"] ?? (!empty($pesananBaru) ? 'new' : (!empty($pesananBer
                     $hasCoords = !empty($item["pickup_lat"]) && !empty($item["dest_lat"]);
                     $sisaDetik = max(0, (int) ($item["sisa_detik_ambil"] ?? 120));
 
-                    if ($tarifItem === null && $hasCoords) {
+                    if ($tarifItem === null && $hasCoords && function_exists("hitungTarifOtomatis")) {
                         $calcTarif = hitungTarifOtomatis($pdo, $item["layanan"] ?? "Food", $item["pickup_lat"], $item["pickup_lng"], $item["dest_lat"], $item["dest_lng"]);
                         if (!empty($calcTarif["total_tarif"])) {
                             $tarifItem = (int) $calcTarif["total_tarif"];
                             if ($jarakItem === null) $jarakItem = (float) $calcTarif["jarak_km"];
                         }
                     }
-                    if ($tarifItem === null && isLayananTarifOtomatis($item["layanan"] ?? "")) {
+                    if ($tarifItem === null && function_exists("isLayananTarifOtomatis") && isLayananTarifOtomatis($item["layanan"] ?? "")) {
                         $tarifItem = 5000;
                     }
                 ?>
@@ -631,7 +713,7 @@ $activeTab = $_GET["tab"] ?? (!empty($pesananBaru) ? 'new' : (!empty($pesananBer
                     <div class="order-card-top">
                         <span class="order-id-tag">#PESANAN-<?= (int) $item["id"] ?></span>
                         <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-                            <span class="countdown-2m" data-seconds="<?= $sisaDetik ?>" style="font-size: 12px; font-weight: 800; background: #fef2f2; color: #b91c1c; padding: 4px 10px; border-radius: 8px; border: 1px solid #fecaca;">
+                            <span class="countdown-3m" data-seconds="<?= $sisaDetik ?>" style="font-size: 12px; font-weight: 800; background: #fef2f2; color: #b91c1c; padding: 4px 10px; border-radius: 8px; border: 1px solid #fecaca;">
                                 Auto-tolak: <span class="timer-val"><?= gmdate("i:s", $sisaDetik) ?></span>
                             </span>
                             <span style="font-size: 12px; font-weight: 700; background: #fffbeb; color: #b45309; padding: 4px 10px; border-radius: 8px; border: 1px solid #fef08a;">
@@ -646,7 +728,7 @@ $activeTab = $_GET["tab"] ?? (!empty($pesananBaru) ? 'new' : (!empty($pesananBer
                             <?php if (!empty($item["wa_pelanggan"])): ?>
                                 <?php
                                     $waClean = preg_replace('/[^0-9]/', '', $item['wa_pelanggan']);
-                                    $waTarget = str_starts_with($waClean, '08') ? '62' . substr($waClean, 1) : $waClean;
+                                    $waTarget = (substr($waClean, 0, 2) === '08') ? '62' . substr($waClean, 1) : $waClean;
                                 ?>
                                 &bull; <a href="https://wa.me/<?= htmlspecialchars($waTarget) ?>" target="_blank" style="color: #000000; font-weight: 700; text-decoration: underline;">WA: <?= htmlspecialchars($item["wa_pelanggan"]) ?></a>
                             <?php elseif (!empty($item["email_pelanggan"])): ?>
@@ -660,7 +742,7 @@ $activeTab = $_GET["tab"] ?? (!empty($pesananBaru) ? 'new' : (!empty($pesananBer
 
                     <div class="route-info-box">
                         <div class="route-point">
-                            <div><b>Rute Pengantaran:</b> <?= nl2br(htmlspecialchars($item["alamat"] !== '-' ? $item["alamat"] : $item["layanan"])) ?></div>
+                            <div><b>Rute Pengantaran:</b> <?= nl2br(htmlspecialchars(($item["alamat"] ?? '-') !== '-' ? ($item["alamat"] ?? '-') : $item["layanan"])) ?></div>
                             <?php if (!empty($item['dest_lat'])): ?>
                                 <a href="https://www.google.com/maps/dir/?api=1&origin=<?= $item['pickup_lat'] ?>,<?= $item['pickup_lng'] ?>&destination=<?= $item['dest_lat'] ?>,<?= $item['dest_lng'] ?>" target="_blank" rel="noopener noreferrer" class="btn-route-maps" onclick="return bukaRuteDriver(event, '<?= $item['dest_lat'] ?>', '<?= $item['dest_lng'] ?>', '<?= $item['pickup_lat'] ?>', '<?= $item['pickup_lng'] ?>');">
                                     Buka Rute di Maps &rarr;
@@ -735,7 +817,7 @@ $activeTab = $_GET["tab"] ?? (!empty($pesananBaru) ? 'new' : (!empty($pesananBer
                                         min="5000"
                                         step="1000"
                                         style="flex: 1; min-width: 140px; padding: 10px 12px; border: 1.5px solid #86efac; border-radius: 8px; font-size: 14px; font-weight: 700;"
-                                        value="<?= (int)($item['total_tarif'] > 5000 ? $item['total_tarif'] : 25000) ?>"
+                                        value="<?= (int)(((int)($item['total_tarif'] ?? 0)) > 5000 ? $item['total_tarif'] : 25000) ?>"
                                         required
                                     >
                                     <button type="submit" class="btn-action btn-accept" style="width: auto; padding: 10px 18px;" onclick="return confirm('Tetapkan harga ini dan terima pesanan?');">
@@ -755,7 +837,7 @@ $activeTab = $_GET["tab"] ?? (!empty($pesananBaru) ? 'new' : (!empty($pesananBer
                             <form method="POST" action="driver.php" style="width: 100%; display: flex;">
                                 <input type="hidden" name="pesanan_id" value="<?= (int) $item["id"] ?>">
                                 <input type="hidden" name="aksi_pesanan" value="tolak">
-                                <button type="submit" class="btn-action btn-reject" onclick="return confirm('Tolak pesanan ini? Pesanan akan tersedia untuk driver lain.');">
+                                <button type="submit" class="btn-action btn-reject" onclick="return confirm('Tolak pesanan ini? Pelanggan akan diminta memilih driver lain.');">
                                     Tolak Pesanan
                                 </button>
                             </form>
@@ -773,7 +855,7 @@ $activeTab = $_GET["tab"] ?? (!empty($pesananBaru) ? 'new' : (!empty($pesananBer
                             <form method="POST" action="driver.php" style="flex: 0.6; display: flex;">
                                 <input type="hidden" name="pesanan_id" value="<?= (int) $item["id"] ?>">
                                 <input type="hidden" name="aksi_pesanan" value="tolak">
-                                <button type="submit" class="btn-action btn-reject" onclick="return confirm('Tolak pesanan ini? Pesanan akan tersedia untuk driver lain.');">
+                                <button type="submit" class="btn-action btn-reject" onclick="return confirm('Tolak pesanan ini? Pelanggan akan diminta memilih driver lain.');">
                                     Tolak
                                 </button>
                             </form>
@@ -801,14 +883,14 @@ $activeTab = $_GET["tab"] ?? (!empty($pesananBaru) ? 'new' : (!empty($pesananBer
                     $tarifItem = isset($item["total_tarif"]) && $item["total_tarif"] !== null && (int)$item["total_tarif"] > 0 ? (int) $item["total_tarif"] : null;
                     $hasCoords = !empty($item["pickup_lat"]) && !empty($item["dest_lat"]);
 
-                    if ($tarifItem === null && $hasCoords) {
+                    if ($tarifItem === null && $hasCoords && function_exists("hitungTarifOtomatis")) {
                         $calcTarif = hitungTarifOtomatis($pdo, $item["layanan"] ?? "Food", $item["pickup_lat"], $item["pickup_lng"], $item["dest_lat"], $item["dest_lng"]);
                         if (!empty($calcTarif["total_tarif"])) {
                             $tarifItem = (int) $calcTarif["total_tarif"];
                             if ($jarakItem === null) $jarakItem = (float) $calcTarif["jarak_km"];
                         }
                     }
-                    if ($tarifItem === null && isLayananTarifOtomatis($item["layanan"] ?? "")) {
+                    if ($tarifItem === null && function_exists("isLayananTarifOtomatis") && isLayananTarifOtomatis($item["layanan"] ?? "")) {
                         $tarifItem = 5000;
                     }
 
@@ -843,7 +925,7 @@ $activeTab = $_GET["tab"] ?? (!empty($pesananBaru) ? 'new' : (!empty($pesananBer
                             <?php if (!empty($item["wa_pelanggan"])): ?>
                                 <?php
                                     $waClean = preg_replace('/[^0-9]/', '', $item['wa_pelanggan']);
-                                    $waTarget = str_starts_with($waClean, '08') ? '62' . substr($waClean, 1) : $waClean;
+                                    $waTarget = (substr($waClean, 0, 2) === '08') ? '62' . substr($waClean, 1) : $waClean;
                                 ?>
                                 &bull; <a href="https://wa.me/<?= htmlspecialchars($waTarget) ?>" target="_blank" style="color: #000000; font-weight: 700; text-decoration: underline;">WA: <?= htmlspecialchars($item["wa_pelanggan"]) ?></a>
                             <?php elseif (!empty($item["email_pelanggan"])): ?>
@@ -857,7 +939,7 @@ $activeTab = $_GET["tab"] ?? (!empty($pesananBaru) ? 'new' : (!empty($pesananBer
 
                     <div class="route-info-box">
                         <div class="route-point">
-                            <div><b>Rute Pengantaran:</b> <?= nl2br(htmlspecialchars($item["alamat"] !== '-' ? $item["alamat"] : $item["layanan"])) ?></div>
+                            <div><b>Rute Pengantaran:</b> <?= nl2br(htmlspecialchars(($item["alamat"] ?? '-') !== '-' ? ($item["alamat"] ?? '-') : $item["layanan"])) ?></div>
                         </div>
                     </div>
 
@@ -907,6 +989,8 @@ $activeTab = $_GET["tab"] ?? (!empty($pesananBaru) ? 'new' : (!empty($pesananBer
                                 <span>Verifikasi QRIS Pelanggan:</span>
                                 <?php if ($isQrisVerified): ?>
                                     <span style="color: #15803d;">Pembayaran Sah & Diverifikasi</span>
+                                <?php elseif ($isQrisRejected && !$hasBuktiBayar): ?>
+                                    <span style="color: #b91c1c;">Pembayaran Ditolak (Menunggu Bukti Baru)</span>
                                 <?php elseif ($isQrisRejected): ?>
                                     <span style="color: #b91c1c;">Pembayaran Ditolak</span>
                                 <?php elseif ($hasBuktiBayar): ?>
@@ -928,7 +1012,7 @@ $activeTab = $_GET["tab"] ?? (!empty($pesananBaru) ? 'new' : (!empty($pesananBer
                                 </div>
                             <?php endif; ?>
 
-                            <?php if (!$isQrisVerified): ?>
+                            <?php if (!$isQrisVerified && $hasBuktiBayar): ?>
                                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
                                     <form method="POST" action="driver.php" style="margin:0; flex:1;">
                                         <input type="hidden" name="pesanan_id" value="<?= (int) $item["id"] ?>">
@@ -960,6 +1044,10 @@ $activeTab = $_GET["tab"] ?? (!empty($pesananBaru) ? 'new' : (!empty($pesananBer
                                             <button type="submit" style="padding: 6px 12px; font-size: 12px; background: #ef4444; color: #fff; border-radius: 6px; border: none; font-weight: bold; cursor: pointer;">Kirim Penolakan</button>
                                         </div>
                                     </form>
+                                </div>
+                            <?php elseif (!$isQrisVerified): ?>
+                                <div style="font-size: 12px; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; padding: 8px 12px; border-radius: 8px;">
+                                    Tombol verifikasi akan muncul setelah pelanggan mengunggah bukti transfer.
                                 </div>
                             <?php endif; ?>
                         </div>
@@ -1128,7 +1216,7 @@ $activeTab = $_GET["tab"] ?? (!empty($pesananBaru) ? 'new' : (!empty($pesananBer
                             $listBank = ['DANA', 'GoPay', 'OVO', 'ShopeePay', 'BCA', 'BRI', 'Mandiri', 'BNI', 'Bank BJB', 'Bank Syariah Indonesia (BSI)'];
                             foreach ($listBank as $bk):
                             ?>
-                                <option value="<?= $bk ?>" <?= $bankDriver === $bk ? 'selected' : '' ?>><?= $bk ?></option>
+                                <option value="<?= htmlspecialchars($bk) ?>" <?= $bankDriver === $bk ? 'selected' : '' ?>><?= htmlspecialchars($bk) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
@@ -1195,8 +1283,8 @@ $activeTab = $_GET["tab"] ?? (!empty($pesananBaru) ? 'new' : (!empty($pesananBer
                                     <td style="padding: 10px; color: #475569; white-space: nowrap;"><?= date('d M Y, H:i', strtotime($pnr['created_at'])) ?></td>
                                     <td style="padding: 10px; font-weight: 800; color: #0f172a; white-space: nowrap;">Rp <?= number_format($pnr['nominal'], 0, ',', '.') ?></td>
                                     <td style="padding: 10px;">
-                                        <strong><?= htmlspecialchars($pnr['bank_tujuan']) ?></strong> - <?= htmlspecialchars($pnr['nomor_rekening']) ?><br>
-                                        <small style="color: #64748b;">a.n <?= htmlspecialchars($pnr['atas_nama']) ?></small>
+                                        <strong><?= htmlspecialchars($pnr['bank_tujuan'] ?? '') ?></strong> - <?= htmlspecialchars($pnr['nomor_rekening'] ?? '') ?><br>
+                                        <small style="color: #64748b;">a.n <?= htmlspecialchars($pnr['atas_nama'] ?? '') ?></small>
                                     </td>
                                     <td style="padding: 10px; white-space: nowrap;">
                                         <?php if ($pnr['status'] === 'Menunggu'): ?>
@@ -1260,7 +1348,7 @@ $activeTab = $_GET["tab"] ?? (!empty($pesananBaru) ? 'new' : (!empty($pesananBer
                                         <?= $mut['tipe'] === 'masuk' ? '+' : '-' ?> Rp <?= number_format($mut['nominal'], 0, ',', '.') ?>
                                     </td>
                                     <td style="padding: 10px; color: #0f172a; font-weight: 600; white-space: nowrap;">Rp <?= number_format($mut['saldo_akhir'], 0, ',', '.') ?></td>
-                                    <td style="padding: 10px; color: #475569; font-size: 12px;"><?= htmlspecialchars($mut['keterangan']) ?></td>
+                                    <td style="padding: 10px; color: #475569; font-size: 12px;"><?= htmlspecialchars($mut['keterangan'] ?? '') ?></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
@@ -1370,14 +1458,15 @@ function switchTab(tabId) {
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('active'));
 
-    const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+    const activeBtn = Array.from(document.querySelectorAll('.tab-btn'))
+        .find(b => b.getAttribute('onclick') === `switchTab('${tabId}')`);
     if (activeBtn) activeBtn.classList.add('active');
 
     const activePanel = document.getElementById('panel-' + tabId);
     if (activePanel) activePanel.classList.add('active');
 
-    const url = new URL(window.location);
-    url.searchParams.set('tab', tabId);
+    // Pertahankan tab di URL tanpa membawa parameter notif lama
+    const url = window.location.pathname + '?tab=' + encodeURIComponent(tabId);
     window.history.replaceState({}, '', url);
 }
 
@@ -1408,10 +1497,12 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closeBuktiModal();
 });
 
-// Countdown 2 menit (120 detik) pada pesanan baru
+// Countdown 2 menit (120 detik) pada pesanan baru.
+// Saat habis, muat ulang halaman: driver.php menjalankan auto-tolak di bagian atas.
+let sudahRedirectTimeout = false;
 setInterval(() => {
     let adaHabis = false;
-    document.querySelectorAll('.countdown-2m').forEach(el => {
+    document.querySelectorAll('.countdown-3m').forEach(el => {
         let sec = parseInt(el.getAttribute('data-seconds') || '0', 10);
         if (sec > 0) {
             sec -= 1;
@@ -1423,10 +1514,12 @@ setInterval(() => {
             if (sec === 0) adaHabis = true;
         }
     });
-    if (adaHabis) {
-        fetch('api/driver_action.php?action=get_orders')
-            .then(() => window.location.reload())
-            .catch(() => window.location.reload());
+    if (adaHabis && !sudahRedirectTimeout) {
+        sudahRedirectTimeout = true;
+        // Jeda 1,5 detik agar selisih jam browser dan server tidak mengakibatkan pesanan masih tampil
+        setTimeout(() => {
+            window.location.href = 'driver.php?notif=timeout_2_menit&tab=new';
+        }, 1500);
     }
 }, 1000);
 

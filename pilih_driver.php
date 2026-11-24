@@ -1,6 +1,13 @@
 <?php
 session_start();
 require_once "koneksi.php";
+if (file_exists(__DIR__ . "/includes/fitur_helper.php")) {
+    require_once __DIR__ . "/includes/fitur_helper.php";
+}
+
+if (function_exists("prosesAutoTolakTigaMenit")) {
+    prosesAutoTolakTigaMenit($pdo);
+}
 
 // Hanya pelanggan yang boleh memilih driver
 if (!isset($_SESSION["user_id"])) {
@@ -22,6 +29,37 @@ if ($role === "driver") {
 
 $userId = (int) $_SESSION["user_id"];
 $pesananId = isset($_GET["pesanan_id"]) ? (int) $_GET["pesanan_id"] : (isset($_POST["pesanan_id"]) ? (int) $_POST["pesanan_id"] : 0);
+$pesanKadaluarsa = "";
+
+// Cek jika memilih ulang driver untuk pesanan yang otomatis ditolak (3 menit)
+if ($pesananId > 0) {
+    $stmtCekPesanan = $pdo->prepare("
+        SELECT id, status, TIMESTAMPDIFF(SECOND, created_at, NOW()) AS elapsed
+        FROM pesanan
+        WHERE id = :id AND user_id = :user_id
+        LIMIT 1
+    ");
+    $stmtCekPesanan->execute(["id" => $pesananId, "user_id" => $userId]);
+    $rowPesanan = $stmtCekPesanan->fetch(PDO::FETCH_ASSOC);
+
+    if ($rowPesanan) {
+        $statusLama = (string) ($rowPesanan["status"] ?? "");
+        $elapsedLama = (int) ($rowPesanan["elapsed"] ?? 0);
+
+        if ($statusLama === "Dibatalkan" && $elapsedLama >= 180) {
+            // Reset waktu & status ke 'Menunggu Driver' saat user memilih ulang driver baru
+            $stmtReset = $pdo->prepare("
+                UPDATE pesanan
+                SET status = 'Menunggu Driver',
+                    driver_id = NULL,
+                    created_at = NOW()
+                WHERE id = :id AND user_id = :user_id
+            ");
+            $stmtReset->execute(["id" => $pesananId, "user_id" => $userId]);
+            $pesanKadaluarsa = "Pesanan #" . $pesananId . " sebelumnya otomatis ditolak karena melewati batas 3 menit. Silakan pilih driver baru sekarang.";
+        }
+    }
+}
 
 // Jika menetapkan driver ke pesanan yang sudah ada
 if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST" && isset($_POST["pilih_driver_pesanan"])) {
@@ -31,7 +69,7 @@ if (($_SERVER["REQUEST_METHOD"] ?? "") === "POST" && isset($_POST["pilih_driver_
     if ($targetPesananId > 0 && $selectedDriverId > 0) {
         $stmtUpdate = $pdo->prepare("
             UPDATE pesanan
-            SET driver_id = :driver_id, status = 'Menunggu Driver'
+            SET driver_id = :driver_id, status = 'Menunggu Driver', created_at = NOW()
             WHERE id = :pesanan_id AND user_id = :user_id
         ");
         $stmtUpdate->execute([
@@ -80,6 +118,12 @@ $drivers = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     : 'Pilih driver yang sedang aktif sebelum membuat pesanan kamu.' ?>
             </p>
         </div>
+
+        <?php if ($pesanKadaluarsa !== ""): ?>
+            <div class="pesanan-alert-banner" style="background:#fef2f2; border-color:#fecaca; color:#991b1b;">
+                <strong><?= htmlspecialchars($pesanKadaluarsa, ENT_QUOTES, 'UTF-8') ?></strong>
+            </div>
+        <?php endif; ?>
 
         <?php if ($pesananId > 0): ?>
             <div class="pesanan-alert-banner">
@@ -135,7 +179,6 @@ $drivers = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         <?php endif; ?>
 
                         <div style="font-size: 11.5px; color: #0369a1; background: #f0f9ff; border: 1px solid #bae6fd; padding: 4px 8px; border-radius: 8px; margin: 8px 0 12px; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
-                            
                             <span>
                                 <?= (!empty($driver['lat']) && !empty($driver['lng'])) ? 'GPS: ' . round((float)$driver['lat'], 4) . ', ' . round((float)$driver['lng'], 4) : 'Area Kampus Polindra' ?>
                             </span>
