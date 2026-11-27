@@ -61,9 +61,14 @@ $activeAdminPage = 'overview';
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - Polindra Suruh</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Archivo+Black&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/style.css?v=<?= filemtime(__DIR__ . '/../assets/css/style.css') ?>">
+    <?php $adminCssFile = __DIR__ . '/../assets/css/admin.css'; ?>
+    <link rel="stylesheet" href="../assets/css/admin.css?v=<?= file_exists($adminCssFile) ? filemtime($adminCssFile) : time() ?>">
 </head>
-<body class="page-admin">
+<body class="page-admin page-admin-index">
 
 <div class="dashboard-container">
 
@@ -71,24 +76,20 @@ $activeAdminPage = 'overview';
 
     <!-- HIGHLIGHT PERHATIAN ADMIN -->
     <?php if ($totalPenarikanMenunggu > 0): ?>
-        <div class="alert alert-warning" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;background:#fef3c7;border-left:4px solid #d97706;margin-bottom:10px;padding:10px 14px;border-radius:10px;">
-            <div style="font-size:12.5px;">
+        <div class="adm-alert">
+            <div class="adm-alert-text">
                 <strong>Ada <?= $totalPenarikanMenunggu ?> pengajuan penarikan dana driver menunggu transfer!</strong>
             </div>
-            <a href="penarikan.php?status=Menunggu" class="btn btn-warning btn-sm" style="background:#d97706;color:white;font-weight:bold;padding:6px 12px;font-size:11.5px;border-radius:6px;white-space:nowrap;">
-                Proses Penarikan
-            </a>
+            <a href="penarikan.php?status=Menunggu" class="adm-alert-btn">Proses Penarikan &rarr;</a>
         </div>
     <?php endif; ?>
 
     <?php if ($totalVerifikasiQris > 0): ?>
-        <div class="alert alert-warning" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px;padding:10px 14px;border-radius:10px;">
-            <div style="font-size:12.5px;">
+        <div class="adm-alert">
+            <div class="adm-alert-text">
                 <strong>Ada <?= $totalVerifikasiQris ?> bukti pembayaran QRIS yang memerlukan konfirmasi/verifikasi!</strong>
             </div>
-            <a href="pesanan.php?status=Diproses" class="btn btn-warning btn-sm" style="background:#b45309;color:white;font-weight:bold;padding:6px 12px;font-size:11.5px;border-radius:6px;white-space:nowrap;">
-                Periksa Pesanan
-            </a>
+            <a href="pesanan.php?status=Diproses" class="adm-alert-btn">Periksa Pesanan &rarr;</a>
         </div>
     <?php endif; ?>
 
@@ -154,7 +155,7 @@ $activeAdminPage = 'overview';
         </div>
 
         <?php if (empty($pesananTerbaru)): ?>
-            <p style="text-align:center;color:var(--dark-muted);padding:30px 0;">Belum ada riwayat pesanan.</p>
+            <p class="adm-empty">Belum ada riwayat pesanan.</p>
         <?php else: ?>
             <div class="table-responsive">
                 <table class="dash-table">
@@ -167,7 +168,7 @@ $activeAdminPage = 'overview';
                             <th>Status</th>
                             <th>QRIS / Bukti</th>
                             <th>Waktu</th>
-                            <th style="text-align:right;">Aksi</th>
+                            <th class="adm-right">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -182,7 +183,7 @@ $activeAdminPage = 'overview';
                             <tr>
                                 <td><strong>#<?= $p['id'] ?></strong></td>
                                 <td><strong><?= htmlspecialchars($p['nama_pelanggan']) ?></strong></td>
-                                <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;font-size:13px;"
+                                <td class="adm-note"
                                     title="<?= htmlspecialchars($p['catatan'] ?? '') ?>">
                                     <?= htmlspecialchars(mb_strimwidth($p['catatan'] ?? '-', 0, 35, '...')) ?>
                                 </td>
@@ -190,7 +191,7 @@ $activeAdminPage = 'overview';
                                     <?php if (!empty($p['nama_driver'])): ?>
                                         <span class="status-pill proses"><?= htmlspecialchars($p['nama_driver']) ?></span>
                                     <?php else: ?>
-                                        <span style="color:#94a3b8;font-size:12px;">Belum ditugaskan</span>
+                                        <span class="adm-muted">Belum ditugaskan</span>
                                     <?php endif; ?>
                                 </td>
                                 <td>
@@ -206,13 +207,13 @@ $activeAdminPage = 'overview';
                                             <span class="status-pill menunggu">Cek Bukti</span>
                                         <?php endif; ?>
                                     <?php else: ?>
-                                        <span style="color:#94a3b8;font-size:12px;">-</span>
+                                        <span class="adm-muted">-</span>
                                     <?php endif; ?>
                                 </td>
-                                <td style="font-size:12px;color:var(--dark-muted);">
+                                <td class="adm-time">
                                     <?= !empty($p['created_at']) ? date('d/m/Y H:i', strtotime($p['created_at'])) : '-' ?>
                                 </td>
-                                <td style="text-align:right;">
+                                <td class="adm-right">
                                     <a href="pesanan.php" class="btn btn-secondary btn-sm">Kelola</a>
                                 </td>
                             </tr>
@@ -241,7 +242,7 @@ $activeAdminPage = 'overview';
                         <th>Email Akun</th>
                         <th>Order Selesai</th>
                         <th>Status Operasional</th>
-                        <th style="text-align:right;">Aksi</th>
+                        <th class="adm-right">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -258,7 +259,7 @@ $activeAdminPage = 'overview';
                                     <span class="status-pill nonaktif">Nonaktif / Offline</span>
                                 <?php endif; ?>
                             </td>
-                            <td style="text-align:right;">
+                            <td class="adm-right">
                                 <a href="driver.php" class="btn btn-secondary btn-sm">Edit / Status</a>
                             </td>
                         </tr>
